@@ -40,8 +40,8 @@ public class ShopItAppApplication implements CommandLineRunner {
 			role2.setName("ROLE_NORMAL");
 
 			Role role3 = new Role();
-			role3.setId(AppConstants.ROLE_HOST);
-			role3.setName("ROLE_HOST");
+			role3.setId(AppConstants.ROLE_MERCHANT);
+			role3.setName("ROLE_MERCHANT");
 
 			List<Role> roles= List.of(role1, role2, role3);
 			this.roleRepo.saveAll(roles);

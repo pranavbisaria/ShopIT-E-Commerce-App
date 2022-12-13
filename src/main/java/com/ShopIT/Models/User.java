@@ -1,6 +1,5 @@
 package com.ShopIT.Models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 public class User implements UserDetails{
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    private Integer id;
+    private Long id;
     @Column(nullable = false)
     private String firstname;
     private String lastname;
@@ -30,12 +29,7 @@ public class User implements UserDetails{
     private String email;
     private String password;
     private String gender;
-    private String address;
-    private String pincode;
-    private String city;
-    private String state;
     private Integer otp;
-    private String gstIn;
     private Date otpRequestedTime;
     private boolean active=false;
     private boolean activeTwoStep=false;

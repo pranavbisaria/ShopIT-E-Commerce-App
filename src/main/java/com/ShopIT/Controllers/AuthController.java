@@ -9,44 +9,33 @@ import com.ShopIT.Payloads.*;
 import com.ShopIT.Repository.RoleRepo;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.JwtAuthRequest;
+import com.ShopIT.Security.JwtTokenHelper;
 import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.OTPService;
 import com.ShopIT.Service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.Date;
 import java.util.Objects;
-
 import static org.springframework.http.HttpStatus.OK;
 
-@RestController
+@RestController @RequiredArgsConstructor
 @RequestMapping(path ="/api/auth")
 public class AuthController {
-    private static final long OTP_VALID_DURATION = 10 * 60 * 1000;
     private final UserRepo userRepo;
     private final UserService userService;
     private final JWTTokenGenerator jwtTokenGenerator;
+    private final JwtTokenHelper jwtTokenHelper;
     private final PasswordEncoder passwordEncoder;
+    private final UserDetailsService userDetailsService;
     private final OTPService otpService;
     private final RoleRepo roleRepo;
-
-    public AuthController(UserRepo userRepo, UserService userService, JWTTokenGenerator jwtTokenGenerator, OTPService otpService, PasswordEncoder passwordEncoder, RoleRepo roleRepo) {
-        this.userRepo = userRepo;
-        this.userService = userService;
-        this.jwtTokenGenerator = jwtTokenGenerator;
-        this.otpService = otpService;
-        this.passwordEncoder = passwordEncoder;
-        this.roleRepo = roleRepo;
-    }
-
-    // User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
+// User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
     @PostMapping("/login")
     public ResponseEntity<?> createToken(@Valid @RequestBody JwtAuthRequest request) {
         request.setEmail(request.getEmail().trim().toLowerCase());
@@ -59,7 +48,7 @@ public class AuthController {
                 JwtAuthResponse response = jwtTokenGenerator.getTokenGenerate(request.getEmail(), request.getPassword());
                 response.setFirstname(user.getFirstname());
                 response.setLastname(user.getLastname());
-                response.setRole(user.getRoles().iterator().next().getName());
+                response.setRoles(user.getRoles());
                 return new ResponseEntity<>(response, OK);
             } else {
                 return new ResponseEntity<>(new ApiResponse("Please verify your email first", false), HttpStatus.NOT_ACCEPTABLE);
@@ -67,13 +56,12 @@ public class AuthController {
         } else {
             /// code to send the OTP on mobile number;
             user.setOtp(otpService.OTPRequest(request.getEmail()));
-            user.setOtpRequestedTime(new Date(System.currentTimeMillis() + OTP_VALID_DURATION));
+            user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
             this.userRepo.save(user);
             return new ResponseEntity<>(new ApiResponse("OTP has been successfully sent on the registered email id!!", true), HttpStatus.CONTINUE);
         }
     }
-
-    //SignUP API for user
+//SignUP API for user
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserDto userDto) {
         userDto.setFirstname(userDto.getFirstname().trim());
@@ -86,8 +74,7 @@ public class AuthController {
             return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.CREATED);
         }
     }
-
-    //Signup API for Host
+//Signup API for Host
     @PostMapping("/signupHost")
     public ResponseEntity<?> registerMerchant(@Valid @RequestBody RegisterMerchant registerMerchant) {
         registerMerchant.setCompanyEmail(registerMerchant.getCompanyEmail().trim().toLowerCase());
@@ -102,8 +89,7 @@ public class AuthController {
             return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
         }
     }
-
-    //Forget Password and otp generator API
+//Forget Password and otp generator API
     @PostMapping("/forget")
     public ResponseEntity<?> sendOTP(@Valid @RequestBody ForgetEmail forgetEmail) {
         forgetEmail.setEmail(forgetEmail.getEmail().trim().toLowerCase());
@@ -111,15 +97,14 @@ public class AuthController {
             //write code for send otp to email....
             User user = this.userRepo.findByEmail(forgetEmail.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "email: " + forgetEmail.getEmail(), 0));
             user.setOtp(otpService.OTPRequest(forgetEmail.getEmail()));
-            user.setOtpRequestedTime(new Date(System.currentTimeMillis() + OTP_VALID_DURATION));
+            user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
             this.userRepo.save(user);
         } else {
             return new ResponseEntity<>(new ApiResponse("User does not exist with the entered email id", false), HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), OK);
     }
-
-    //Verify OTP for activation of user/host account
+//Verify OTP for activation of user/host account
     @PostMapping("/verifyotp")
     public ResponseEntity<?> verifyOtp(@Valid @RequestBody OtpDto otpDto) {
         otpDto.setEmail(otpDto.getEmail().trim().toLowerCase());
@@ -139,8 +124,7 @@ public class AuthController {
             throw new Apiexception("INVALID ACTION!!!");
         }
     }
-
-    //Verify OTP for Password Change
+//Verify OTP for Password Change
     @PostMapping("/verifyPassOtp")
     public ResponseEntity<?> verifyOtpPassChange(@Valid @RequestBody OtpDto otpDto) {
         otpDto.setEmail(otpDto.getEmail().trim().toLowerCase());
@@ -158,13 +142,11 @@ public class AuthController {
             throw new Apiexception("INVALID ACTION!!!");
         }
     }
-
-    //Reset Password OTP to change the password
+//Reset Password OTP to change the password
     @PostMapping("/resetpass")
     public ResponseEntity<?> resetPass(@Valid @RequestBody ForgetPassword forgetPassword) {
         forgetPassword.setEmail(forgetPassword.getEmail().trim().toLowerCase());
         User userRP = this.userRepo.findByEmail(forgetPassword.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email :" + forgetPassword.getEmail(), 0));
-        System.out.println("\n\n\n" + forgetPassword.getOtp() + "\n\n\n" + userRP.getOtp() + "\n\n\n");
         if (userRP.getOtp() != null) {
             if (Objects.equals(userRP.getOtp(), forgetPassword.getOtp())) {
                 if (this.userService.isOTPValid(forgetPassword.getEmail())) {
@@ -183,14 +165,14 @@ public class AuthController {
 
     private ResponseEntity<?> getResponseEntityMerchant(@RequestBody @Valid RegisterMerchant userDto) {
         User user = this.userRepo.findByEmail(userDto.getCompanyEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + userDto.getCompanyEmail(), 0));
-        if (user.isActive() && user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_HOST).get())) {
+        if (user.isActive() && user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get())) {
             return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
         } else {
             user.setFirstname(userDto.getCompanyEmail().substring(0, userDto.getCompanyEmail().indexOf("@")));
             user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
             Role oldRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
             if (user.getRoles().contains(oldRole)) {
-                Role newRole = this.roleRepo.findById(AppConstants.ROLE_HOST).get();
+                Role newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
                 user.getRoles().add(newRole);
             }
             this.userRepo.save(user);
@@ -206,7 +188,7 @@ public class AuthController {
             user.setFirstname(userDto.getFirstname());
             user.setLastname(userDto.getLastname());
             user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
-            Role oldRole = this.roleRepo.findById(AppConstants.ROLE_HOST).get();
+            Role oldRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
             if (user.getRoles().contains(oldRole)) {
                 Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
                 user.getRoles().add(newRole);

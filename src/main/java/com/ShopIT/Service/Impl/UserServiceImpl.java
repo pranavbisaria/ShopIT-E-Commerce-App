@@ -10,6 +10,7 @@ import com.ShopIT.Payloads.UserDto;
 import com.ShopIT.Repository.RoleRepo;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-@Service
+@Service @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private static final long OTP_VALID_DURATION = 10 * 60 * 1000;
     private final UserRepo userRepo;
@@ -25,12 +26,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepo roleRepo;
 
-    public UserServiceImpl(UserRepo userRepo, ModelMapper modelMapper, PasswordEncoder passwordEncoder, RoleRepo roleRepo) {
-        this.userRepo = userRepo;
-        this.modelMapper = modelMapper;
-        this.passwordEncoder = passwordEncoder;
-        this.roleRepo = roleRepo;
-    }
     @Override
     public void registerNewUser(UserDto userDto, int otp) {
         User user =this.modelMapper.map(userDto, User.class);
@@ -60,7 +55,7 @@ public class UserServiceImpl implements UserService {
         user.setProfilePhoto("default.png");
         user.setOtpRequestedTime(new Date(System.currentTimeMillis()+OTP_VALID_DURATION));
         //roles
-        Role role = this.roleRepo.findById(AppConstants.ROLE_HOST).get();
+        Role role = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
         user.getRoles().add(role);
         this.userRepo.save(user);
     }

@@ -3,6 +3,7 @@ package com.ShopIT.Config;
 import com.ShopIT.Security.CustomUserDetailService;
 import com.ShopIT.Security.JwtAuthenticationEntryPoint;
 import com.ShopIT.Security.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,23 +21,18 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity @RequiredArgsConstructor
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class MySecurityConfig{
     private final CustomUserDetailService customUserDetailService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    public MySecurityConfig(CustomUserDetailService customUserDetailService, JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint, JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.customUserDetailService = customUserDetailService;
-        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
                 .authorizeHttpRequests()
-                .requestMatchers("/api/auth/**", "/file/**")
+                .requestMatchers("/api/auth/**", "/api/auth/regenerateToken", "/file/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated()

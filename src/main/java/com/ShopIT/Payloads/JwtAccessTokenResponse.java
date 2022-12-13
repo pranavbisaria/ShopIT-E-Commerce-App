@@ -10,9 +10,8 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class JwtAuthResponse {
+public class JwtAccessTokenResponse {
     private String accessToken;
-    private String refreshToken;
     private String firstname;
     private String lastname;
     private Set<Role> roles;

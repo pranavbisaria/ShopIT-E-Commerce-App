@@ -30,9 +30,7 @@ public class AuthController {
     private final UserRepo userRepo;
     private final UserService userService;
     private final JWTTokenGenerator jwtTokenGenerator;
-    private final JwtTokenHelper jwtTokenHelper;
     private final PasswordEncoder passwordEncoder;
-    private final UserDetailsService userDetailsService;
     private final OTPService otpService;
     private final RoleRepo roleRepo;
 // User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
@@ -60,6 +58,11 @@ public class AuthController {
             this.userRepo.save(user);
             return new ResponseEntity<>(new ApiResponse("OTP has been successfully sent on the registered email id!!", true), HttpStatus.CONTINUE);
         }
+    }
+//to regenerate refresh token
+    @GetMapping("/regenerateToken")
+    public ResponseEntity<?> refreshToken(@RequestParam String token) {
+        return this.jwtTokenGenerator.getRefreshTokenGenerate(token);
     }
 //SignUP API for user
     @PostMapping("/signup")

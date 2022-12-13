@@ -50,4 +50,43 @@ public class JWTTokenGenerator {
         response.setRefreshToken(myRefreshToken);
         return response;
     }
+
+    public ResponseEntity<?> getRefreshTokenGenerate(String token){
+        if(token != null){
+            try {
+                System.out.println("\n\n\nInitial\n\n\n");
+                String username = this.jwtTokenHelper.getUsernameFromToken(token);
+                System.out.println("\n\n\nInitial\n\n\n");
+                if(username.startsWith("#refresh")) {
+                    String finalUsername = username.substring(8);
+                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(finalUsername);
+                    User user = userRepo.findByEmail(finalUsername).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + finalUsername, 0));
+                    if (this.jwtTokenHelper.validateRefreshToken(token, userDetails)) {
+                        String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
+                        return new ResponseEntity<>(new JwtAccessTokenResponse(myAccessToken, user.getFirstname(), user.getLastname(), user.getRoles()), OK);
+                    }
+                    else {
+                        return new ResponseEntity<>(new ApiResponse("Refresh Token Expired!!", false), HttpStatus.REQUEST_TIMEOUT);
+                    }
+                }
+                else{
+                    return new ResponseEntity<>(new ApiResponse("Not a Refresh Token", false), BAD_REQUEST);
+                }
+            }
+            catch(IllegalArgumentException e){
+                return new ResponseEntity<>(new ApiResponse("Unable to get the JWT token!!", false), HttpStatus.BAD_REQUEST);
+            }
+            catch(ExpiredJwtException e){
+                return new ResponseEntity<>(new ApiResponse("Refresh Token Expired!!", false), HttpStatus.REQUEST_TIMEOUT);
+            }
+            catch(MalformedJwtException e){
+                System.out.println("Invalid Jwt");
+                return new ResponseEntity<>(new ApiResponse("Invalid jwt token", false), BAD_REQUEST);
+            }
+        }
+        else {
+            System.out.println("Jwt token does not begins with Bearer");
+            return new ResponseEntity<>(new ApiResponse("Invalid jwt token", false), BAD_REQUEST);
+        }
+    }
 }

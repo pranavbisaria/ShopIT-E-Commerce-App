@@ -40,7 +40,7 @@ public class JwtTokenHelper {
     //generate token for user
     public String generateAccessToken(UserDetails userDetails){
         Map<String, Object> claims = new HashMap<>();
-        claims.put("authorities", userDetails.getAuthorities().stream()
+        claims.put("roles", userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
         return doGenerateAccessToken(claims, userDetails.getUsername());
     }
@@ -54,7 +54,7 @@ public class JwtTokenHelper {
     }
     private String doGenerateRefreshToken(String subject){
         return Jwts.builder().setSubject("#refresh"+subject).setIssuedAt(new Date(System.currentTimeMillis()))
-        .setExpiration(new Date(System.currentTimeMillis() + AppConstants.JWT_ACCESS_TOKEN_VALIDITY *1000 ))
+        .setExpiration(new Date(System.currentTimeMillis() + AppConstants.JWT_REFRESH_TOKEN_VALIDITY *1000 ))
         .signWith(SignatureAlgorithm.HS512, AppConstants.secret).compact();
     }
     //validate toke

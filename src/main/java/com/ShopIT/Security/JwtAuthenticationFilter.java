@@ -27,13 +27,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        //1 Get token
         String requestToken = request.getHeader("Authorization");
-//        System.out.println(requestToken);
         String username = null;
         String token = null;
         if(requestToken != null && requestToken.startsWith("Bearer")){
-            // Bearer 2322133sdgsg
             token = requestToken.substring(7);
             try {
                 username = this.jwtTokenHelper.getUsernameFromToken(token);
@@ -51,12 +48,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         else{
             System.out.println("Jwt token does not begins with Bearer");
         }
-        // once we get the token we validate
         if(username != null && SecurityContextHolder.getContext().getAuthentication() == null){
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
             if(this.jwtTokenHelper.validateToken(token, userDetails)){
-                //Sahi chal raha h
-                // Authentication nhi krna h
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
@@ -68,7 +62,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         else{
             System.out.println("user is null or the context is not null");
         }
-
         filterChain.doFilter(request, response);
     }
 }

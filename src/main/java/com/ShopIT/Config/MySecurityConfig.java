@@ -35,15 +35,14 @@ public class MySecurityConfig{
                 .requestMatchers("/api/auth/**", "/api/auth/regenerateToken", "/file/**")
                 .permitAll()
                 .anyRequest()
-                .authenticated();
-//                .and()
-//                .exceptionHandling().authenticationEntryPoint(this.jwtAuthenticationEntryPoint)
-//                .and()
-//                .sessionManagement()
-//                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-//        http.addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-//        http.authenticationProvider(daoAuthenticationProvider());
-        http.oauth2Login();;
+                .authenticated()
+                .and()
+                .exceptionHandling().authenticationEntryPoint(this.jwtAuthenticationEntryPoint)
+                .and()
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        http.addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.authenticationProvider(daoAuthenticationProvider());
         return http.build();
     }
     @Bean

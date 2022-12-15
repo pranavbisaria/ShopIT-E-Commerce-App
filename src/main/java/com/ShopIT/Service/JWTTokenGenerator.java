@@ -36,7 +36,6 @@ public class JWTTokenGenerator {
             this.authenticationManager.authenticate(authenticationToken);
         }
         catch (BadCredentialsException e) {
-            System.out.println("Invalid Details");
             throw new Apiexception("Invalid Username or Password");
         }
     }
@@ -80,12 +79,10 @@ public class JWTTokenGenerator {
                 return new ResponseEntity<>(new ApiResponse("Refresh Token Expired!!", false), HttpStatus.REQUEST_TIMEOUT);
             }
             catch(MalformedJwtException e){
-                System.out.println("Invalid Jwt");
                 return new ResponseEntity<>(new ApiResponse("Invalid jwt token", false), BAD_REQUEST);
             }
         }
         else {
-            System.out.println("Jwt token does not begins with Bearer");
             return new ResponseEntity<>(new ApiResponse("Invalid jwt token", false), BAD_REQUEST);
         }
     }

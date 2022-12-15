@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter@Setter
-public class ForgetEmail {
+public class EmailDto {
     @NotEmpty
     @Email(message = "Email Address is not Valid!!")
     String email;

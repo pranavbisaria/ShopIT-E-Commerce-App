@@ -1,14 +1,11 @@
 package com.ShopIT.Service;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
-@Service
+@Service @RequiredArgsConstructor
 public class OTPService {
     private final EmailService emailService;
-    public OTPService(EmailService emailService) {
-        this.emailService = emailService;
-    }
     public int OTPRequest(String email){
         Random rand = new Random();
         int otpCheck = rand.nextInt(899999) +100000;

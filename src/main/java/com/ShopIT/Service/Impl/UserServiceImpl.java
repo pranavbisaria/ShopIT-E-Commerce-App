@@ -1,63 +1,167 @@
 package com.ShopIT.Service.Impl;
 import com.ShopIT.Config.AppConstants;
+import com.ShopIT.Exceptions.Apiexception;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.Role;
 import com.ShopIT.Models.User;
-import com.ShopIT.Payloads.EditUserDto;
-import com.ShopIT.Payloads.ForgetPassword;
-import com.ShopIT.Payloads.RegisterMerchant;
-import com.ShopIT.Payloads.UserDto;
+import com.ShopIT.Payloads.*;
 import com.ShopIT.Repository.RoleRepo;
 import com.ShopIT.Repository.UserRepo;
+import com.ShopIT.Security.JwtAuthRequest;
+import com.ShopIT.Service.JWTTokenGenerator;
+import com.ShopIT.Service.OTPService;
 import com.ShopIT.Service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.springframework.web.bind.annotation.RequestBody;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import static org.springframework.http.HttpStatus.OK;
+
 @Service @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private static final long OTP_VALID_DURATION = 10 * 60 * 1000;
     private final UserRepo userRepo;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepo roleRepo;
-
+    private final JWTTokenGenerator jwtTokenGenerator;
+    private final OTPService otpService;
+//LoginAPI
     @Override
-    public void registerNewUser(UserDto userDto, int otp) {
-        User user =this.modelMapper.map(userDto, User.class);
-        //encoded the password
-        user.setPassword(this.passwordEncoder.encode(user.getPassword()));
-        user.setOtp(otp);
-        user.setActive(false);
-        user.setTwoStepVerification(false);
-        user.setActiveTwoStep(false);
-        user.setProfilePhoto("default.png");
-        user.setOtpRequestedTime(new Date(System.currentTimeMillis()+OTP_VALID_DURATION));
-        Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
-        user.getRoles().add(role);
-        this.userRepo.save(user);
+    public ResponseEntity<?> LoginAPI(JwtAuthRequest request){
+        request.setEmail(request.getEmail().trim().toLowerCase());
+        User user = this.userRepo.findByEmail(request.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + request.getEmail(), 0));
+        if (!user.getTwoStepVerification() || user.isActiveTwoStep()) {
+            if (user.isActive()) {
+                user.setTwoStepVerification(false);
+                user.setActiveTwoStep(false);
+                this.userRepo.save(user);
+                JwtAuthResponse response = jwtTokenGenerator.getTokenGenerate(request.getEmail(), request.getPassword());
+                response.setFirstname(user.getFirstname());
+                response.setLastname(user.getLastname());
+                response.setRoles(user.getRoles());
+                return new ResponseEntity<>(response, OK);
+            }
+            else {
+                return new ResponseEntity<>(new ApiResponse("Please verify your email first", false), HttpStatus.NOT_ACCEPTABLE);
+            }
+        }
+        else {
+            user.setOtp(otpService.OTPRequest(request.getEmail()));
+            user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
+            this.userRepo.save(user);
+            return new ResponseEntity<>(new ApiResponse("OTP has been successfully sent on the registered email id!!", true), HttpStatus.CONTINUE);
+        }
     }
+//Register Email
     @Override
-    public void registerNewMerchant(RegisterMerchant userDto, int otp){
-        User user = new User();
-        user.setFirstname(userDto.getCompanyEmail().substring(0, userDto.getCompanyEmail().indexOf("@")));
-        user.setEmail(userDto.getCompanyEmail());
-        user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
-        //encoded the password
-        user.setTwoStepVerification(false);
-        user.setActiveTwoStep(false);
-        user.setOtp(otp);
-        user.setActive(false);
-        user.setProfilePhoto("default.png");
-        user.setOtpRequestedTime(new Date(System.currentTimeMillis()+OTP_VALID_DURATION));
-        //roles
-        Role role = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
-        user.getRoles().add(role);
-        this.userRepo.save(user);
+    public ResponseEntity<?> registerEmail(EmailDto emailDto){
+        emailDto.setEmail(emailDto.getEmail().trim().toLowerCase());
+        if (emailExists(emailDto.getEmail())) {
+            return getResponseEntityRegisterEmail(emailDto);
+        }
+        else {
+            User user = new User();
+            user.setFirstname(emailDto.getEmail().substring(0, emailDto.getEmail().indexOf("@")));
+            user.setOtp(otpService.OTPRequest(emailDto.getEmail()));
+            user.setEmail(emailDto.getEmail());
+            user.setActive(false);
+            user.setTwoStepVerification(false);
+            user.setActiveTwoStep(false);
+            user.setProfilePhoto("default.png");
+            user.setOtpRequestedTime(new Date(System.currentTimeMillis()+AppConstants.OTP_VALID_DURATION));
+            Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+            user.getRoles().add(role);
+            this.userRepo.save(user);
+            return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.CREATED);
+        }
+    }
+//Verify To register
+    @Override
+    public ResponseEntity<?> verifyToRegister(OtpDto otpDto){
+        otpDto.setEmail(otpDto.getEmail().trim().toLowerCase());
+        User userOTP = this.userRepo.findByEmail(otpDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email :" + otpDto.getEmail(), 0));
+        if (isOTPValid(otpDto.getEmail()) && userOTP.getOtp() != null) {
+            if (userOTP.getOtp() == otpDto.getOne_time_password()) {
+                userOTP.setActive(true);
+                userOTP.setActiveTwoStep(true);
+                userOTP.setOtp(null);
+                userOTP.setOtpRequestedTime(null);
+                this.userRepo.save(userOTP);
+                return new ResponseEntity<>(new ApiResponse("OTP Successfully Verified", true), OK);
+            } else {
+                return new ResponseEntity<>(new ApiResponse("Invalid OTP!!", false), HttpStatus.NOT_ACCEPTABLE);
+            }
+        } else {
+            throw new Apiexception("INVALID ACTION!!!");
+        }
+    }
+//Register User after OTP verification
+    @Override
+    public ResponseEntity<?> signupUser(UserDto userDto){
+        userDto.setFirstname(userDto.getFirstname().trim());
+        userDto.setLastname(userDto.getLastname().trim());
+        userDto.setEmail(userDto.getEmail().trim().toLowerCase());
+        User user =this.userRepo.findByEmail(userDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: "+userDto.getEmail(), 0));
+        if (emailExists(userDto.getEmail()) && user.getPassword()==null && user.getLastname()==null) {
+            user.setFirstname(userDto.getFirstname());
+            user.setLastname(userDto.getLastname());
+            user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
+            this.userRepo.save(user);
+            return new ResponseEntity<>(new ApiResponse("User signup successful", true), HttpStatus.CREATED);
+        }
+        else{
+            return new ResponseEntity<>(new ApiResponse("Invalid Action!!", false), HttpStatus.NOT_ACCEPTABLE);
+        }
+    }
+//Register Merchant
+    @Override
+    public ResponseEntity<?> registerMerchant(RegisterMerchant registerMerchant){
+        registerMerchant.setCompanyEmail(registerMerchant.getCompanyEmail().trim().toLowerCase());
+        if (emailExists(registerMerchant.getCompanyEmail())) {
+            return getResponseEntityMerchant(registerMerchant);
+        }
+        else {
+            User user = new User();
+            user.setFirstname(registerMerchant.getCompanyEmail().substring(0, registerMerchant.getCompanyEmail().indexOf("@")));
+            user.setEmail(registerMerchant.getCompanyEmail());
+            user.setPassword(this.passwordEncoder.encode(registerMerchant.getPassword()));
+            user.setTwoStepVerification(false);
+            user.setActiveTwoStep(false);
+            user.setOtp(otpService.OTPRequest(registerMerchant.getCompanyEmail()));
+            user.setActive(false);
+            user.setProfilePhoto("default.png");
+            user.setOtpRequestedTime(new Date(System.currentTimeMillis()+AppConstants.OTP_VALID_DURATION));
+            Role role = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
+            user.getRoles().add(role);
+            this.userRepo.save(user);
+            return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.CREATED);
+        }
+    }
+//Verify OTp without database alteration
+    @Override
+    public ResponseEntity<?> verifyOTPPasswordChange(OtpDto otpDto){
+        otpDto.setEmail(otpDto.getEmail().trim().toLowerCase());
+        User userOTP = this.userRepo.findByEmail(otpDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email :" + otpDto.getEmail(), 0));
+        if (isOTPValid(otpDto.getEmail()) && userOTP.getOtp() != null && userOTP.isActive()) {
+            if (userOTP.getOtp() == otpDto.getOne_time_password()) {
+                userOTP.setActive(true);
+                userOTP.setActiveTwoStep(true);
+                this.userRepo.save(userOTP);
+                return new ResponseEntity<>(new ApiResponse("OTP Successfully Verified", true), OK);
+            } else {
+                return new ResponseEntity<>(new ApiResponse("Invalid OTP!!", false), HttpStatus.NOT_ACCEPTABLE);
+            }
+        } else {
+            throw new Apiexception("INVALID ACTION!!!");
+        }
     }
     @Override
     public String updateUserProfile(EditUserDto editUserDto){
@@ -69,7 +173,6 @@ public class UserServiceImpl implements UserService {
         this.userRepo.save(userUpdate);
         return "User Updated Successfully!!!";
     }
-    @Override
     public boolean isOTPValid(String email) {
         User userOTP = this.userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User", "Email :"+email, 0));
         if (userOTP.getOtp() == null) {
@@ -108,6 +211,71 @@ public class UserServiceImpl implements UserService {
     public boolean emailExists(String email) {
         return userRepo.findByEmail(email).isPresent();
     }
+    private ResponseEntity<?> getResponseEntityRegisterEmail(@RequestBody @Valid EmailDto userDto) {
+        User user = this.userRepo.findByEmail(userDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + userDto.getEmail(), 0));
+        if (user.isActive() && user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_NORMAL).get())) {
+            return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
+        } else {
+            Role oldRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
+            if (user.getRoles().contains(oldRole)) {
+                Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+                user.getRoles().add(newRole);
+            }
+            this.userRepo.save(user);
+            return sendOTPForget(new EmailDto(userDto.getEmail()));
+        }
+    }
+    @Override
+    public ResponseEntity<?> resetPassword(ForgetPassword forgetPassword){
+        forgetPassword.setEmail(forgetPassword.getEmail().trim().toLowerCase());
+        User userRP = this.userRepo.findByEmail(forgetPassword.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email :" + forgetPassword.getEmail(), 0));
+        if (userRP.getOtp() != null) {
+            if (Objects.equals(userRP.getOtp(), forgetPassword.getOtp())) {
+                if (isOTPValid(forgetPassword.getEmail())) {
+                    updateUserPass(forgetPassword);
+                    return new ResponseEntity<>(new ApiResponse("Password Reset SUCCESS", true), OK);
+                } else {
+                    return new ResponseEntity<>(new ApiResponse("Session Expired...........", false), HttpStatus.BAD_REQUEST);
+                }
+            } else {
+                return new ResponseEntity<>(new ApiResponse("Invalid OTP!!!", false), HttpStatus.FORBIDDEN);
+            }
+        } else {
+            return new ResponseEntity<>(new ApiResponse("Invalid Action!!", false), HttpStatus.NOT_ACCEPTABLE);
+        }
+    }
+    @Override
+    public ResponseEntity<?> sendOTPForget(EmailDto emailDto) {
+        emailDto.setEmail(emailDto.getEmail().trim().toLowerCase());
+        if (emailExists(emailDto.getEmail())) {
+            //write code for send otp to email....
+            User user = this.userRepo.findByEmail(emailDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "email: " + emailDto.getEmail(), 0));
+            user.setOtp(otpService.OTPRequest(emailDto.getEmail()));
+            user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
+            this.userRepo.save(user);
+        } else {
+            return new ResponseEntity<>(new ApiResponse("User does not exist with the entered email id", false), HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), OK);
+    }
+    private ResponseEntity<?> getResponseEntityMerchant(@RequestBody @Valid RegisterMerchant userDto) {
+        User user = this.userRepo.findByEmail(userDto.getCompanyEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + userDto.getCompanyEmail(), 0));
+        if (user.isActive() && user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get())) {
+            return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
+        } else {
+            user.setFirstname(userDto.getCompanyEmail().substring(0, userDto.getCompanyEmail().indexOf("@")));
+            user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
+            Role oldRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+            if (user.getRoles().contains(oldRole)) {
+                Role newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
+                user.getRoles().add(newRole);
+            }
+            this.userRepo.save(user);
+            return sendOTPForget(new EmailDto(userDto.getCompanyEmail()));
+        }
+    }
+    public User DtoToUser(UserDto userdto) {return this.modelMapper.map(userdto, User.class);}
+    public UserDto UserToDto(User user){return this.modelMapper.map(user, UserDto.class);}
 //    @Override
 //    public List<CategoryDTO> getAllCategory() {
 //        List<Category> cat = this.categRepo.findAll();
@@ -119,10 +287,6 @@ public class UserServiceImpl implements UserService {
 //        return cat.stream().map(this::CategoryToDto).collect(Collectors.toList());
 //    }
 
-    public User DtoToUser(UserDto userdto) {
-        return this.modelMapper.map(userdto, User.class);
-    }
-    public UserDto UserToDto(User user){return this.modelMapper.map(user, UserDto.class);}
 //    public CategoryDTO CategoryToDto(Category category){
 //        return this.modelMapper.map(category, CategoryDTO.class);
 //    }

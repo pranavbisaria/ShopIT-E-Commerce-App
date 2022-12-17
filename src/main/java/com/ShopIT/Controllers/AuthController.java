@@ -45,7 +45,7 @@ public class AuthController {
     public ResponseEntity<?> registerMerchant(@Valid @RequestBody RegisterMerchant registerMerchant) {
         return this.userService.registerMerchant(registerMerchant);
     }
-//Signin/Signup using google
+//Sign-in/Signup using google
     @PostMapping("/signGoogle")
     public ResponseEntity<?> signWithGoogle(@Valid @RequestParam String TokenG) throws JsonProcessingException {
         return this.userService.signGoogle(TokenG);
@@ -63,6 +63,6 @@ public class AuthController {
 //Reset Password OTP to change the password
     @PostMapping("/resetpass")
     public ResponseEntity<?> resetPass(@Valid @RequestBody ForgetPassword forgetPassword) {
-       return this.userService.resetPassword(forgetPassword);
+        return this.userService.resetPassword(forgetPassword);
     }
 }

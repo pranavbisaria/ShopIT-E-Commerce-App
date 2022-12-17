@@ -10,5 +10,4 @@ public class AppConstants {
     public static final String GOOGLE_CLIENT_ID = "1084765789984-2q7ueo55fnj99vh3pleh36dt8giiopnv.apps.googleusercontent.com";
     public static final String GOOGLE_ISSUER = "https://accounts.google.com";
     public static final String secret = "jwtTokenKeyJwtTokenKeyJwtTokenKeyJwtTokenKeyJwtTokenKeyJwtTokenKeyjwtTokenKeyJwtTokenKey";
-
 }

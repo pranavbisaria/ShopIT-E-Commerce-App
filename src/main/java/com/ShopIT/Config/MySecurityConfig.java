@@ -59,4 +59,3 @@ public class MySecurityConfig{
         return provider;
     }
 }
-

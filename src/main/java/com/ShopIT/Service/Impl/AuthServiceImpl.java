@@ -8,30 +8,39 @@ import com.ShopIT.Payloads.*;
 import com.ShopIT.Repository.RoleRepo;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.JwtAuthRequest;
+import com.ShopIT.Security.JwtTokenHelper;
 import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.OTPService;
-import com.ShopIT.Service.UserService;
+import com.ShopIT.Service.AuthService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
+import org.apache.commons.codec.binary.Base64;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
 
 @Service @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class AuthServiceImpl implements AuthService {
     private final UserRepo userRepo;
-    private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepo roleRepo;
     private final JWTTokenGenerator jwtTokenGenerator;
+    private final UserDetailsService userDetailsService;
+    private final JwtTokenHelper jwtTokenHelper;
     private final OTPService otpService;
 //LoginAPI
     @Override
@@ -90,11 +99,6 @@ public class UserServiceImpl implements UserService {
         User userOTP = this.userRepo.findByEmail(otpDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email :" + otpDto.getEmail(), 0));
         if (isOTPValid(otpDto.getEmail()) && userOTP.getOtp() != null) {
             if (userOTP.getOtp() == otpDto.getOne_time_password()) {
-                userOTP.setActive(true);
-                userOTP.setActiveTwoStep(true);
-                userOTP.setOtp(null);
-                userOTP.setOtpRequestedTime(null);
-                this.userRepo.save(userOTP);
                 return new ResponseEntity<>(new ApiResponse("OTP Successfully Verified", true), OK);
             } else {
                 return new ResponseEntity<>(new ApiResponse("Invalid OTP!!", false), HttpStatus.NOT_ACCEPTABLE);
@@ -110,16 +114,14 @@ public class UserServiceImpl implements UserService {
         userDto.setLastname(userDto.getLastname().trim());
         userDto.setEmail(userDto.getEmail().trim().toLowerCase());
         User user =this.userRepo.findByEmail(userDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: "+userDto.getEmail(), 0));
-        if (emailExists(userDto.getEmail()) && user.getPassword()==null && user.getLastname()==null) {
-            user.setFirstname(userDto.getFirstname());
-            user.setLastname(userDto.getLastname());
-            user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
-            this.userRepo.save(user);
-            return new ResponseEntity<>(new ApiResponse("User signup successful", true), HttpStatus.CREATED);
-        }
-        else{
-            return new ResponseEntity<>(new ApiResponse("Invalid Action!!", false), HttpStatus.NOT_ACCEPTABLE);
-        }
+
+
+                this.userRepo.save(user);
+                this.otpService.SuccessRequest(user.getEmail(), user.getFirstname());
+                return new ResponseEntity<>(new ApiResponse("User ID Successfully Created", true), CREATED);
+            }
+
+
     }
 //Register Merchant
     @Override
@@ -142,8 +144,17 @@ public class UserServiceImpl implements UserService {
             Role role = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
             user.getRoles().add(role);
             this.userRepo.save(user);
+            this.otpService.SuccessRequest(user.getEmail(), user.getFirstname());
             return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.CREATED);
         }
+    }
+//sign-in or sign-up with Google
+    @Override
+    public ResponseEntity<?> signGoogle(String Token) throws JsonProcessingException {
+        Token =  new String (Base64.decodeBase64(Token.split("\\.")[1]), StandardCharsets.UTF_8);
+        ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        GoogleSignModel payload = null;
+
     }
 //Verify OTp without database alteration
     @Override
@@ -163,16 +174,6 @@ public class UserServiceImpl implements UserService {
             throw new Apiexception("INVALID ACTION!!!");
         }
     }
-    @Override
-    public String updateUserProfile(EditUserDto editUserDto){
-        User userUpdate = this.userRepo.findByEmail(editUserDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email :"+editUserDto.getEmail(), 0));
-        userUpdate.setFirstname(editUserDto.getFirstname());
-        userUpdate.setLastname(editUserDto.getLastname());
-        userUpdate.setGender(editUserDto.getGender());
-        userUpdate.setPhoneNumber(editUserDto.getPhoneNumber());
-        this.userRepo.save(userUpdate);
-        return "User Updated Successfully!!!";
-    }
     public boolean isOTPValid(String email) {
         User userOTP = this.userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User", "Email :"+email, 0));
         if (userOTP.getOtp() == null) {
@@ -180,24 +181,7 @@ public class UserServiceImpl implements UserService {
         }
         long currentTimeInMillis = System.currentTimeMillis();
         long otpRequestedTimeInMillis = userOTP.getOtpRequestedTime().getTime();
-// OTP expiry check
         return otpRequestedTimeInMillis >= currentTimeInMillis;
-    }
-    @Override
-    public UserDto getUserById(Integer userId) {
-        User user = this.userRepo.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User", "ID", userId));
-        return this.UserToDto(user);
-    }
-    @Override
-    public List<UserDto> getAllUsers() {
-        List<User> users = this.userRepo.findAll();
-        return users.stream().map(this::UserToDto).collect(Collectors.toList());
-    }
-    @Override
-    public void DeleteUser(Integer userId) {
-        User user = this.userRepo.findById(userId).orElseThrow(()-> new ResourceNotFoundException("User", "ID", userId));
-        user.getRoles().clear();
-        this.userRepo.delete(user);
     }
     @Override
     public void updateUserPass(ForgetPassword password) {
@@ -207,7 +191,6 @@ public class UserServiceImpl implements UserService {
         user.setPassword(this.passwordEncoder.encode(password.getPassword()));
         this.userRepo.save(user);
     }
-    @Override
     public boolean emailExists(String email) {
         return userRepo.findByEmail(email).isPresent();
     }
@@ -248,7 +231,6 @@ public class UserServiceImpl implements UserService {
     public ResponseEntity<?> sendOTPForget(EmailDto emailDto) {
         emailDto.setEmail(emailDto.getEmail().trim().toLowerCase());
         if (emailExists(emailDto.getEmail())) {
-            //write code for send otp to email....
             User user = this.userRepo.findByEmail(emailDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "email: " + emailDto.getEmail(), 0));
             user.setOtp(otpService.OTPRequest(emailDto.getEmail()));
             user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
@@ -274,21 +256,4 @@ public class UserServiceImpl implements UserService {
             return sendOTPForget(new EmailDto(userDto.getCompanyEmail()));
         }
     }
-    public User DtoToUser(UserDto userdto) {return this.modelMapper.map(userdto, User.class);}
-    public UserDto UserToDto(User user){return this.modelMapper.map(user, UserDto.class);}
-//    @Override
-//    public List<CategoryDTO> getAllCategory() {
-//        List<Category> cat = this.categRepo.findAll();
-//        return cat.stream().map(this::CategoryToDto).collect(Collectors.toList());
-//    }
-//    @Override
-//    public List<CategoryDTO> getAllTrendingCategory() {
-//        List<Category> cat = this.categRepo.findAll(Sort.by(Sort.Direction.DESC,"count"));
-//        return cat.stream().map(this::CategoryToDto).collect(Collectors.toList());
-//    }
-
-//    public CategoryDTO CategoryToDto(Category category){
-//        return this.modelMapper.map(category, CategoryDTO.class);
-//    }
-
 }

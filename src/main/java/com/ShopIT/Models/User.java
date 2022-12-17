@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Setter
 public class User implements UserDetails{
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     @Column(nullable = false)
     private String firstname;
@@ -35,7 +35,7 @@ public class User implements UserDetails{
     private boolean activeTwoStep=false;
     private String phoneNumber;
     private String profilePhoto;
-    private Boolean twoStepVerification;
+    private Boolean twoStepVerification=false;
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user", referencedColumnName = "id"), inverseJoinColumns =  @JoinColumn(name = "role", referencedColumnName = "id"))
     private Set<Role> roles = new HashSet<>();

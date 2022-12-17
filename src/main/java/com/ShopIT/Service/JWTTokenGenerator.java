@@ -53,9 +53,7 @@ public class JWTTokenGenerator {
     public ResponseEntity<?> getRefreshTokenGenerate(String token){
         if(token != null){
             try {
-                System.out.println("\n\n\nInitial\n\n\n");
                 String username = this.jwtTokenHelper.getUsernameFromToken(token);
-                System.out.println("\n\n\nInitial\n\n\n");
                 if(username.startsWith("#refresh")) {
                     String finalUsername = username.substring(8);
                     UserDetails userDetails = this.userDetailsService.loadUserByUsername(finalUsername);

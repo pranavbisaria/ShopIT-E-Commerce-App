@@ -3,22 +3,18 @@ package com.ShopIT;
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Models.Role;
 import com.ShopIT.Repository.RoleRepo;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-
 import java.util.List;
 
 @SpringBootApplication
+@RequiredArgsConstructor
 public class ShopItAppApplication implements CommandLineRunner {
 	private final RoleRepo roleRepo;
-
-	public ShopItAppApplication(RoleRepo roleRepo) {
-		this.roleRepo = roleRepo;
-	}
-
 	public static void main(String[] args) {
 		SpringApplication.run(ShopItAppApplication.class, args);
 	}

@@ -3,7 +3,8 @@ package com.ShopIT.Controllers;
 import com.ShopIT.Payloads.*;
 import com.ShopIT.Security.JwtAuthRequest;
 import com.ShopIT.Service.JWTTokenGenerator;
-import com.ShopIT.Service.UserService;
+import com.ShopIT.Service.AuthService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +13,7 @@ import jakarta.validation.Valid;
 @RestController @RequiredArgsConstructor
 @RequestMapping(path ="/api/auth")
 public class AuthController {
-    private final UserService userService;
+    private final AuthService userService;
     private final JWTTokenGenerator jwtTokenGenerator;
 // User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
     @PostMapping("/login")
@@ -43,6 +44,11 @@ public class AuthController {
     @PostMapping("/signupHost")
     public ResponseEntity<?> registerMerchant(@Valid @RequestBody RegisterMerchant registerMerchant) {
         return this.userService.registerMerchant(registerMerchant);
+    }
+//Signin/Signup using google
+    @PostMapping("/signGoogle")
+    public ResponseEntity<?> signWithGoogle(@Valid @RequestParam String TokenG) throws JsonProcessingException {
+        return this.userService.signGoogle(TokenG);
     }
 //Forget Password and otp generator API
     @PostMapping("/forget")

@@ -115,7 +115,13 @@ public class AuthServiceImpl implements AuthService {
         userDto.setEmail(userDto.getEmail().trim().toLowerCase());
         User user =this.userRepo.findByEmail(userDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: "+userDto.getEmail(), 0));
 
-
+                user.setFirstname(userDto.getFirstname());
+                user.setLastname(userDto.getLastname());
+                user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
+                user.setActive(true);
+                user.setActiveTwoStep(true);
+                user.setOtp(null);
+                user.setOtpRequestedTime(null);
                 this.userRepo.save(user);
                 this.otpService.SuccessRequest(user.getEmail(), user.getFirstname());
                 return new ResponseEntity<>(new ApiResponse("User ID Successfully Created", true), CREATED);

@@ -178,7 +178,12 @@ public class AuthServiceImpl implements AuthService {
                 JwtAuthResponse jwtAuthResponse = null;
                 String email = payload.getEmail();
                 if (emailExists(email)) {
-                    } else {
+                    User user = this.userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + email, 0));
+                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
+                    String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
+                    String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
+                    jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
+                } else {
 
                 return new ResponseEntity<>(jwtAuthResponse, OK);
             }

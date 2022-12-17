@@ -166,6 +166,24 @@ public class AuthServiceImpl implements AuthService {
         Token =  new String (Base64.decodeBase64(Token.split("\\.")[1]), StandardCharsets.UTF_8);
         ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         GoogleSignModel payload = null;
+        try{
+            payload = mapper.readValue(Token, GoogleSignModel.class);
+        }
+        catch (JsonProcessingException e){
+            e.printStackTrace();
+            return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.BAD_REQUEST);
+        }
+
+
+                JwtAuthResponse jwtAuthResponse = null;
+                String email = payload.getEmail();
+                if (emailExists(email)) {
+                    } else {
+
+                return new ResponseEntity<>(jwtAuthResponse, OK);
+            }
+
+        }
 
     }
 //Verify OTp without database alteration

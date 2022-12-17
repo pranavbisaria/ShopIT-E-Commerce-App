@@ -173,7 +173,7 @@ public class AuthServiceImpl implements AuthService {
             e.printStackTrace();
             return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.BAD_REQUEST);
         }
-
+        if(payload != null) {
             if(verifyGoogleToken(payload)) {
                 JwtAuthResponse jwtAuthResponse = null;
                 String email = payload.getEmail();
@@ -205,7 +205,9 @@ public class AuthServiceImpl implements AuthService {
                 return new ResponseEntity<>(new ApiResponse("Either the token is expired or the token is not authorized", false), HttpStatus.FORBIDDEN);
             }
         }
-
+        else{
+            return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.BAD_REQUEST);
+        }
     }
 //Verify OTp without database alteration
     @Override

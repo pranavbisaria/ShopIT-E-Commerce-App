@@ -10,7 +10,12 @@ import lombok.Setter;
 @Setter
 public class UserDto {
     private Integer id;
-
+    @Min(value=100000, message="OTP should be 6 digit number")
+    @Digits(message="OTP should be 6 digit number", fraction = 0, integer = 6)
+    private Integer one_time_password;
+    @NotEmpty
+    @Email(message = "Email Address is not Valid!!")
+    private String email;
     @NotEmpty
     private String firstname;
     private String lastname;

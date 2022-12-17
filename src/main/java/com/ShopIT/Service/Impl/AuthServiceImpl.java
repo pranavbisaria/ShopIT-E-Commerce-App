@@ -174,7 +174,7 @@ public class AuthServiceImpl implements AuthService {
             return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.BAD_REQUEST);
         }
 
-
+            if(verifyGoogleToken(payload)) {
                 JwtAuthResponse jwtAuthResponse = null;
                 String email = payload.getEmail();
                 if (emailExists(email)) {
@@ -201,7 +201,9 @@ public class AuthServiceImpl implements AuthService {
                 }
                 return new ResponseEntity<>(jwtAuthResponse, OK);
             }
-
+            else{
+                return new ResponseEntity<>(new ApiResponse("Either the token is expired or the token is not authorized", false), HttpStatus.FORBIDDEN);
+            }
         }
 
     }

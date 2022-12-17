@@ -184,7 +184,21 @@ public class AuthServiceImpl implements AuthService {
                     String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
                     jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
                 } else {
-
+                    User user = new User();
+                    user.setEmail(payload.getEmail());
+                    user.setFirstname(payload.getGiven_name());
+                    user.setLastname(payload.getFamily_name());
+                    user.setPassword("Google");
+                    user.setProfilePhoto(payload.getPicture());
+                    user.setActive(true);
+                    Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+                    user.getRoles().add(role);
+                    this.userRepo.save(user);
+                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
+                    String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
+                    String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
+                    jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
+                }
                 return new ResponseEntity<>(jwtAuthResponse, OK);
             }
 

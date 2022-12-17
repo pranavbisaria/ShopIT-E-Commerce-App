@@ -1,4 +1,5 @@
 package com.ShopIT.Service.Impl;
+
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Exceptions.Apiexception;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
@@ -9,9 +10,9 @@ import com.ShopIT.Repository.RoleRepo;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.JwtAuthRequest;
 import com.ShopIT.Security.JwtTokenHelper;
+import com.ShopIT.Service.AuthService;
 import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.OTPService;
-import com.ShopIT.Service.AuthService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

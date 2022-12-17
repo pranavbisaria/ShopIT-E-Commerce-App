@@ -115,7 +115,7 @@ public class AuthServiceImpl implements AuthService {
         userDto.setEmail(userDto.getEmail().trim().toLowerCase());
         User user =this.userRepo.findByEmail(userDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: "+userDto.getEmail(), 0));
        if (isOTPValid(user.getEmail()) && user.getOtp() != null && user.getPassword()==null) {
-
+            if (Objects.equals(user.getOtp(), userDto.getOne_time_password())) {
                 user.setFirstname(userDto.getFirstname());
                 user.setLastname(userDto.getLastname());
                 user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
@@ -130,7 +130,10 @@ public class AuthServiceImpl implements AuthService {
             else {
                 return new ResponseEntity<>(new ApiResponse("Invalid OTP!!", false), HttpStatus.NOT_ACCEPTABLE);
             }
-
+       }
+        else{
+            return new ResponseEntity<>(new ApiResponse("Invalid Action!!", false), HttpStatus.BAD_REQUEST);
+        }
     }
 //Register Merchant
     @Override

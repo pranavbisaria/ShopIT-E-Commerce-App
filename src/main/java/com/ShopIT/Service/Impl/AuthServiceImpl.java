@@ -309,4 +309,7 @@ public class AuthServiceImpl implements AuthService {
             return sendOTPForget(new EmailDto(userDto.getCompanyEmail()));
         }
     }
+    Boolean verifyGoogleToken(GoogleSignModel googleSignModel){
+        return (googleSignModel.getAzp().equals(AppConstants.GOOGLE_CLIENT_ID) && googleSignModel.getIss().equals(AppConstants.GOOGLE_ISSUER) && (googleSignModel.getExp()*1000 >= System.currentTimeMillis()));
+    }
 }

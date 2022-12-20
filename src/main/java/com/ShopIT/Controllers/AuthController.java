@@ -5,6 +5,10 @@ import com.ShopIT.Security.JwtAuthRequest;
 import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.AuthService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +20,13 @@ public class AuthController {
     private final AuthService userService;
     private final JWTTokenGenerator jwtTokenGenerator;
 // User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
+    @Operation(summary = "This is the API to login into the Application, it also acts as a token generator")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Login Successful, Access Token and Refresh Token is generated", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "Wrong Password", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "(Validation)Invalid Email or Password Format", content = @Content(mediaType = "application/json"))
+    })
     @PostMapping("/login")
     public ResponseEntity<?> createToken(@Valid @RequestBody JwtAuthRequest request) {
         return this.userService.LoginAPI(request);
@@ -27,7 +38,7 @@ public class AuthController {
     }
 //Register Email
     @PostMapping("/signupEmail")
-    public ResponseEntity<?> registerEmail(@Valid @RequestBody EmailDto emailDto) {
+    public ResponseEntity<?> registerEmail(@Valid @RequestBody EmailDto emailDto) throws Exception {
         return this.userService.registerEmail(emailDto);
     }
 //Verify OTP for activation of user/host account
@@ -42,7 +53,7 @@ public class AuthController {
     }
 //Signup API for Host
     @PostMapping("/signupHost")
-    public ResponseEntity<?> registerMerchant(@Valid @RequestBody RegisterMerchant registerMerchant) {
+    public ResponseEntity<?> registerMerchant(@Valid @RequestBody RegisterMerchant registerMerchant) throws Exception {
         return this.userService.registerMerchant(registerMerchant);
     }
 //Sign-in/Signup using google
@@ -52,7 +63,7 @@ public class AuthController {
     }
 //Forget Password and otp generator API
     @PostMapping("/forget")
-    public ResponseEntity<?> sendOTP(@Valid @RequestBody EmailDto emailDto) {
+    public ResponseEntity<?> sendOTP(@Valid @RequestBody EmailDto emailDto) throws Exception {
         return userService.sendOTPForget(emailDto);
     }
 //Verify OTP for Password Change

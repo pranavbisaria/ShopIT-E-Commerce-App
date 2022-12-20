@@ -9,7 +9,6 @@ import com.ShopIT.Payloads.*;
 import com.ShopIT.Repository.RoleRepo;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.JwtAuthRequest;
-import com.ShopIT.Security.JwtAuthenticationEntryPoint;
 import com.ShopIT.Security.JwtTokenHelper;
 import com.ShopIT.Service.AuthService;
 import com.ShopIT.Service.JWTTokenGenerator;
@@ -73,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
     }
 //Register Email
     @Override
-    public ResponseEntity<?> registerEmail(EmailDto emailDto){
+    public ResponseEntity<?> registerEmail(EmailDto emailDto) throws Exception {
         emailDto.setEmail(emailDto.getEmail().trim().toLowerCase());
         if (emailExists(emailDto.getEmail())) {
             return getResponseEntityRegisterEmail(emailDto);
@@ -91,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
             Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
             user.getRoles().add(role);
             this.userRepo.save(user);
-            return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.CREATED);
+            return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.CONTINUE);
         }
     }
 //Verify To register
@@ -139,7 +138,7 @@ public class AuthServiceImpl implements AuthService {
     }
 //Register Merchant
     @Override
-    public ResponseEntity<?> registerMerchant(RegisterMerchant registerMerchant){
+    public ResponseEntity<?> registerMerchant(RegisterMerchant registerMerchant) throws Exception {
         registerMerchant.setCompanyEmail(registerMerchant.getCompanyEmail().trim().toLowerCase());
         if (emailExists(registerMerchant.getCompanyEmail())) {
             return getResponseEntityMerchant(registerMerchant);
@@ -246,7 +245,7 @@ public class AuthServiceImpl implements AuthService {
     public boolean emailExists(String email) {
         return userRepo.findByEmail(email).isPresent();
     }
-    private ResponseEntity<?> getResponseEntityRegisterEmail(@RequestBody @Valid EmailDto userDto) {
+    private ResponseEntity<?> getResponseEntityRegisterEmail(@RequestBody @Valid EmailDto userDto) throws Exception {
         User user = this.userRepo.findByEmail(userDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + userDto.getEmail(), 0));
         if (user.isActive() && user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_NORMAL).get())) {
             return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
@@ -280,19 +279,24 @@ public class AuthServiceImpl implements AuthService {
         }
     }
     @Override
-    public ResponseEntity<?> sendOTPForget(EmailDto emailDto) {
+    public ResponseEntity<?> sendOTPForget(EmailDto emailDto) throws Exception {
         emailDto.setEmail(emailDto.getEmail().trim().toLowerCase());
-        if (emailExists(emailDto.getEmail())) {
-            User user = this.userRepo.findByEmail(emailDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "email: " + emailDto.getEmail(), 0));
-            user.setOtp(otpService.OTPRequest(emailDto.getEmail()));
-            user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
-            this.userRepo.save(user);
-        } else {
-            return new ResponseEntity<>(new ApiResponse("User does not exist with the entered email id", false), HttpStatus.NOT_FOUND);
+        try {
+            if (emailExists(emailDto.getEmail())) {
+                User user = this.userRepo.findByEmail(emailDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "email: " + emailDto.getEmail(), 0));
+                user.setOtp(otpService.OTPRequest(emailDto.getEmail()));
+                user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
+                this.userRepo.save(user);
+            } else {
+                return new ResponseEntity<>(new ApiResponse("User does not exist with the entered email id", false), HttpStatus.NOT_FOUND);
+            }
+            return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), OK);
         }
-        return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), OK);
+        catch(Exception e){
+            throw new Exception("Cannot able to send the mail to the registered account", e);
+        }
     }
-    private ResponseEntity<?> getResponseEntityMerchant(@RequestBody @Valid RegisterMerchant userDto) {
+    private ResponseEntity<?> getResponseEntityMerchant(@RequestBody @Valid RegisterMerchant userDto) throws Exception {
         User user = this.userRepo.findByEmail(userDto.getCompanyEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + userDto.getCompanyEmail(), 0));
         if (user.isActive() && user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get())) {
             return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);

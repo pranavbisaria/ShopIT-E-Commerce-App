@@ -72,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
     }
 //Register Email
     @Override
-    public ResponseEntity<?> registerEmail(EmailDto emailDto){
+    public ResponseEntity<?> registerEmail(EmailDto emailDto) throws Exception {
         emailDto.setEmail(emailDto.getEmail().trim().toLowerCase());
         if (emailExists(emailDto.getEmail())) {
             return getResponseEntityRegisterEmail(emailDto);
@@ -90,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
             Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
             user.getRoles().add(role);
             this.userRepo.save(user);
-            return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.CREATED);
+            return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.CONTINUE);
         }
     }
 //Verify To register
@@ -138,7 +138,7 @@ public class AuthServiceImpl implements AuthService {
     }
 //Register Merchant
     @Override
-    public ResponseEntity<?> registerMerchant(RegisterMerchant registerMerchant){
+    public ResponseEntity<?> registerMerchant(RegisterMerchant registerMerchant) throws Exception {
         registerMerchant.setCompanyEmail(registerMerchant.getCompanyEmail().trim().toLowerCase());
         if (emailExists(registerMerchant.getCompanyEmail())) {
             return getResponseEntityMerchant(registerMerchant);
@@ -163,51 +163,49 @@ public class AuthServiceImpl implements AuthService {
     }
 //sign-in or sign-up with Google
     @Override
-    public ResponseEntity<?> signGoogle(String Token) throws JsonProcessingException {
+    public ResponseEntity<?> signGoogle(String Token) throws JsonProcessingException, NullPointerException {
         Token =  new String (Base64.decodeBase64(Token.split("\\.")[1]), StandardCharsets.UTF_8);
         ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         GoogleSignModel payload = null;
-        try{
+        try {
             payload = mapper.readValue(Token, GoogleSignModel.class);
+            if (payload != null) {
+                if (verifyGoogleToken(payload)) {
+                    JwtAuthResponse jwtAuthResponse = null;
+                    String email = payload.email();
+                    if (emailExists(email)) {
+                        User user = this.userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + email, 0));
+                        UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
+                        String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
+                        String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
+                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
+                    } else {
+                        User user = new User();
+                        user.setEmail(payload.email());
+                        user.setFirstname(payload.given_name());
+                        user.setLastname(payload.family_name());
+                        user.setPassword("Google");
+                        user.setProfilePhoto(payload.picture());
+                        user.setActive(true);
+                        Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+                        user.getRoles().add(role);
+                        this.userRepo.save(user);
+                        UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
+                        String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
+                        String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
+                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
+                    }
+                    return new ResponseEntity<>(jwtAuthResponse, OK);
+                } else {
+                    return new ResponseEntity<>(new ApiResponse("Either the token is expired or the token is not authorized", false), HttpStatus.FORBIDDEN);
+                }
+            } else {
+                return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.BAD_REQUEST);
+            }
         }
-        catch (JsonProcessingException e){
+        catch (JsonProcessingException|NullPointerException e){
             e.printStackTrace();
             return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.BAD_REQUEST);
-        }
-        if(payload != null) {
-            if(verifyGoogleToken(payload)) {
-                JwtAuthResponse jwtAuthResponse = null;
-                String email = payload.getEmail();
-                if (emailExists(email)) {
-                    User user = this.userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + email, 0));
-                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
-                    String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
-                    String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-                    jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
-                } else {
-                    User user = new User();
-                    user.setEmail(payload.getEmail());
-                    user.setFirstname(payload.getGiven_name());
-                    user.setLastname(payload.getFamily_name());
-                    user.setPassword("Google");
-                    user.setProfilePhoto(payload.getPicture());
-                    user.setActive(true);
-                    Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
-                    user.getRoles().add(role);
-                    this.userRepo.save(user);
-                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
-                    String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
-                    String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-                    jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
-                }
-                return new ResponseEntity<>(jwtAuthResponse, OK);
-            }
-            else{
-                return new ResponseEntity<>(new ApiResponse("Either the token is expired or the token is not authorized", false), HttpStatus.FORBIDDEN);
-            }
-        }
-        else{
-            return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.BAD_REQUEST);
         }
     }
 //Verify OTp without database alteration
@@ -237,7 +235,6 @@ public class AuthServiceImpl implements AuthService {
         long otpRequestedTimeInMillis = userOTP.getOtpRequestedTime().getTime();
         return otpRequestedTimeInMillis >= currentTimeInMillis;
     }
-    @Override
     public void updateUserPass(ForgetPassword password) {
         User user = this.userRepo.findByEmail(password.getEmail()).orElseThrow(()-> new ResourceNotFoundException("User", "Email :"+password.getEmail(), 0));
         user.setOtp(null);
@@ -248,7 +245,7 @@ public class AuthServiceImpl implements AuthService {
     public boolean emailExists(String email) {
         return userRepo.findByEmail(email).isPresent();
     }
-    private ResponseEntity<?> getResponseEntityRegisterEmail(@RequestBody @Valid EmailDto userDto) {
+    private ResponseEntity<?> getResponseEntityRegisterEmail(@RequestBody @Valid EmailDto userDto) throws Exception {
         User user = this.userRepo.findByEmail(userDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + userDto.getEmail(), 0));
         if (user.isActive() && user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_NORMAL).get())) {
             return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
@@ -282,19 +279,24 @@ public class AuthServiceImpl implements AuthService {
         }
     }
     @Override
-    public ResponseEntity<?> sendOTPForget(EmailDto emailDto) {
+    public ResponseEntity<?> sendOTPForget(EmailDto emailDto) throws Exception {
         emailDto.setEmail(emailDto.getEmail().trim().toLowerCase());
-        if (emailExists(emailDto.getEmail())) {
-            User user = this.userRepo.findByEmail(emailDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "email: " + emailDto.getEmail(), 0));
-            user.setOtp(otpService.OTPRequest(emailDto.getEmail()));
-            user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
-            this.userRepo.save(user);
-        } else {
-            return new ResponseEntity<>(new ApiResponse("User does not exist with the entered email id", false), HttpStatus.NOT_FOUND);
+        try {
+            if (emailExists(emailDto.getEmail())) {
+                User user = this.userRepo.findByEmail(emailDto.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "email: " + emailDto.getEmail(), 0));
+                user.setOtp(otpService.OTPRequest(emailDto.getEmail()));
+                user.setOtpRequestedTime(new Date(System.currentTimeMillis() + AppConstants.OTP_VALID_DURATION));
+                this.userRepo.save(user);
+            } else {
+                return new ResponseEntity<>(new ApiResponse("User does not exist with the entered email id", false), HttpStatus.NOT_FOUND);
+            }
+            return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), OK);
         }
-        return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), OK);
+        catch(Exception e){
+            throw new Exception("Cannot able to send the mail to the registered account", e);
+        }
     }
-    private ResponseEntity<?> getResponseEntityMerchant(@RequestBody @Valid RegisterMerchant userDto) {
+    private ResponseEntity<?> getResponseEntityMerchant(@RequestBody @Valid RegisterMerchant userDto) throws Exception {
         User user = this.userRepo.findByEmail(userDto.getCompanyEmail()).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + userDto.getCompanyEmail(), 0));
         if (user.isActive() && user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get())) {
             return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
@@ -311,6 +313,6 @@ public class AuthServiceImpl implements AuthService {
         }
     }
     Boolean verifyGoogleToken(GoogleSignModel googleSignModel){
-        return (googleSignModel.getAzp().equals(AppConstants.GOOGLE_CLIENT_ID) && googleSignModel.getIss().equals(AppConstants.GOOGLE_ISSUER) && (googleSignModel.getExp()*1000 >= System.currentTimeMillis()));
+        return (googleSignModel.azp().equals(AppConstants.GOOGLE_CLIENT_ID) && googleSignModel.iss().equals(AppConstants.GOOGLE_ISSUER) && (googleSignModel.exp()*1000 >= System.currentTimeMillis()));
     }
 }

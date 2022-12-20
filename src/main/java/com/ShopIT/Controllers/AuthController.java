@@ -32,16 +32,36 @@ public class AuthController {
         return this.userService.LoginAPI(request);
     }
 //Regenerate refresh token
+    @Operation(summary = "This is the API to regenerate access token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "The refresh token is correct and access token is generated", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "408", description = "Token Expired", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "Enter string is not a refresh token", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "(Validation)Invalid Email or Password Format", content = @Content(mediaType = "application/json"))
+    })
     @GetMapping("/regenerateToken")
     public ResponseEntity<?> refreshToken(@RequestParam String token) {
         return this.jwtTokenGenerator.getRefreshTokenGenerate(token);
     }
 //Register Email
+@Operation(summary = "Email to verify for signup")
+@ApiResponses(value = {
+        @ApiResponse(responseCode = "100", description = "OTP successfully send to user account", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "409", description = "User already exist", content = @Content(mediaType = "application/json"))
+})
     @PostMapping("/signupEmail")
     public ResponseEntity<?> registerEmail(@Valid @RequestBody EmailDto emailDto) throws Exception {
         return this.userService.registerEmail(emailDto);
     }
 //Verify OTP for activation of user/host account
+@Operation(summary = "Email OTP verification")
+@ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "OTP verified Successfully", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "Invalid Action", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "406", description = "Invalid OTP", content = @Content(mediaType = "application/json"))
+})
     @PostMapping("/verifyotp")
     public ResponseEntity<?> verifyOtp(@Valid @RequestBody OtpDto otpDto) {
         return this.userService.verifyToRegister(otpDto);

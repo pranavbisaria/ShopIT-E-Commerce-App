@@ -47,7 +47,7 @@ public class AuthController {
     }
 //Sign-in/Signup using google
     @PostMapping("/signGoogle")
-    public ResponseEntity<?> signWithGoogle(@Valid @RequestParam String TokenG) throws JsonProcessingException {
+    public ResponseEntity<?> signWithGoogle(@Valid @RequestParam String TokenG) throws JsonProcessingException, NullPointerException  {
         return this.userService.signGoogle(TokenG);
     }
 //Forget Password and otp generator API

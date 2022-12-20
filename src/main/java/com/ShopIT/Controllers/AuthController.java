@@ -67,11 +67,25 @@ public class AuthController {
         return this.userService.verifyToRegister(otpDto);
     }
 //SignUP API for user
+    @Operation(summary = "Completing signup process after the registration")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "201", description = "User registerd successfully", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "Invalid Action", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "406", description = "Invalid OTP", content = @Content(mediaType = "application/json"))
+    })
     @PostMapping("/signupUser")
     public ResponseEntity<?> registerUserDetails(@Valid @RequestBody UserDto userDto) {
         return this.userService.signupUser(userDto);
     }
 //Signup API for Host
+@Operation(summary = "Completing signup process after the registration")
+@ApiResponses(value = {
+        @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "201", description = "User registerd successfully", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "Invalid Action", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "406", description = "Invalid OTP", content = @Content(mediaType = "application/json"))
+})
     @PostMapping("/signupHost")
     public ResponseEntity<?> registerMerchant(@Valid @RequestBody RegisterMerchant registerMerchant) throws Exception {
         return this.userService.registerMerchant(registerMerchant);

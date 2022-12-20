@@ -10,7 +10,7 @@ public interface AuthService {
     ResponseEntity<?> verifyToRegister(OtpDto otpDto);
     ResponseEntity<?> signupUser(UserDto userDto);
     ResponseEntity<?> registerMerchant(RegisterMerchant registerMerchant);
-    ResponseEntity<?> signGoogle(String Token) throws JsonProcessingException;
+    ResponseEntity<?> signGoogle(String Token) throws JsonProcessingException, NullPointerException;
     ResponseEntity<?> verifyOTPPasswordChange(OtpDto otpDto);
     void updateUserPass(ForgetPassword password);
     ResponseEntity<?> resetPassword(ForgetPassword forgetPassword);

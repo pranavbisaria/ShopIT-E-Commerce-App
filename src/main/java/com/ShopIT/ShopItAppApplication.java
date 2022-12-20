@@ -8,22 +8,24 @@ import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+
+import java.sql.SQLException;
 import java.util.List;
 
 @SpringBootApplication
 @RequiredArgsConstructor
+@EnableCaching
 public class ShopItAppApplication implements CommandLineRunner {
 	private final RoleRepo roleRepo;
 	public static void main(String[] args) {
 		SpringApplication.run(ShopItAppApplication.class, args);
 	}
-
 	@Bean
 	public ModelMapper modelMapper(){
 		return new ModelMapper();
 	}
-
 	@Override
 	public void run(String... args){
 		try{

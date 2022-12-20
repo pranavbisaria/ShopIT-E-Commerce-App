@@ -22,6 +22,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity @RequiredArgsConstructor
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class MySecurityConfig{
+    private static final String[] PUBLIC_URLS = {
+            "/api/auth/**", "/file/**", "/swagger-ui.html", "/swagger-ui/index.html", "/v3/**", "/swagger-resources/**",
+            "/swagger-ui/**", "/webjars/**", "/v2/**"
+    };
     private final CustomUserDetailService customUserDetailService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -30,7 +34,7 @@ public class MySecurityConfig{
         http
                 .csrf().disable()
                 .authorizeHttpRequests()
-                .requestMatchers("/api/auth/**", "/api/auth/regenerateToken", "/file/**")
+                .requestMatchers(PUBLIC_URLS)
                 .permitAll()
                 .anyRequest()
                 .authenticated()

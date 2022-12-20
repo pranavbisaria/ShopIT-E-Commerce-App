@@ -91,6 +91,11 @@ public class AuthController {
         return this.userService.registerMerchant(registerMerchant);
     }
 //Sign-in/Signup using google
+    @Operation(summary = "Google Authentication for sign-up and sign-in")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "Invalid token", content = @Content(mediaType = "application/json")),
+    })
     @PostMapping("/signGoogle")
     public ResponseEntity<?> signWithGoogle(@Valid @RequestParam String TokenG) throws JsonProcessingException, NullPointerException  {
         return this.userService.signGoogle(TokenG);

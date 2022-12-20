@@ -101,16 +101,33 @@ public class AuthController {
         return this.userService.signGoogle(TokenG);
     }
 //Forget Password and otp generator API
+@Operation(summary = "To send the OTP to the requested email id if the user forget their credentials")
+@ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "OTP successfully sent", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "404", description = "No user with entered email is found", content = @Content(mediaType = "application/json")),
+})
     @PostMapping("/forget")
     public ResponseEntity<?> sendOTP(@Valid @RequestBody EmailDto emailDto) throws Exception {
         return userService.sendOTPForget(emailDto);
     }
 //Verify OTP for Password Change
+@Operation(summary = "To verify the OTP to change the password")
+@ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "OTP verified Successfully", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "Invalid Action", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "406", description = "Invalid OTP", content = @Content(mediaType = "application/json"))
+})
     @PostMapping("/verifyPassOtp")
     public ResponseEntity<?> verifyOtpPassChange(@Valid @RequestBody OtpDto otpDto) {
         return userService.verifyOTPPasswordChange(otpDto);
     }
 //Reset Password OTP to change the password
+@Operation(summary = "Used to reset the password after verifying the OTP if password is forgot by the user")
+@ApiResponses(value = {
+        @ApiResponse(responseCode = "404", description = "User not found", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "403", description = "Invalid OTP input", content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "406", description = "Invalid Action", content = @Content(mediaType = "application/json")),
+})
     @PostMapping("/resetpass")
     public ResponseEntity<?> resetPass(@Valid @RequestBody ForgetPassword forgetPassword) {
         return this.userService.resetPassword(forgetPassword);

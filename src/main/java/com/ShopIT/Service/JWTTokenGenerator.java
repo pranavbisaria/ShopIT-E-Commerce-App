@@ -31,24 +31,28 @@ public class JWTTokenGenerator {
     private final UserDetailsService userDetailsService;
     private final UserRepo userRepo;
 
-    private void authenticate(String username, String password) {
+    private boolean authenticate(String username, String password) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
-        try{
+        try {
             this.authenticationManager.authenticate(authenticationToken);
-        }
-        catch (BadCredentialsException e) {
-            throw new Apiexception("Invalid Username or Password");
+            return true;
+        } catch (BadCredentialsException var5) {
+            System.out.println("Invalid Password");
+            return false;
         }
     }
     public JwtAuthResponse getTokenGenerate(String email, String Password){
-        this.authenticate(email, Password);
-        UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
-        String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
-        String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-        JwtAuthResponse response = new JwtAuthResponse();
-        response.setAccessToken(myAccessToken);
-        response.setRefreshToken(myRefreshToken);
-        return response;
+        if (this.authenticate(email, Password)) {
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
+            String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
+            String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
+            JwtAuthResponse response = new JwtAuthResponse();
+            response.setAccessToken(myAccessToken);
+            response.setRefreshToken(myRefreshToken);
+            return response;
+        } else {
+            return null;
+        }
     }
 
     public ResponseEntity<?> getRefreshTokenGenerate(String token) {

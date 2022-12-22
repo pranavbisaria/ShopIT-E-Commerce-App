@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -45,11 +46,13 @@ public class JwtTokenHelper {
     private String doGenerateAccessToken(Map<String, Object> claims, String subject){
         return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
         .setExpiration(new Date(System.currentTimeMillis()+ AppConstants.JWT_ACCESS_TOKEN_VALIDITY *1000 ))
+        .setId(UUID.randomUUID().toString())
         .signWith(SignatureAlgorithm.HS512, AppConstants.secret).compact();
     }
     private String doGenerateRefreshToken(String subject){
         return Jwts.builder().setSubject("#refresh"+subject).setIssuedAt(new Date(System.currentTimeMillis()))
         .setExpiration(new Date(System.currentTimeMillis() + AppConstants.JWT_REFRESH_TOKEN_VALIDITY *1000 ))
+        .setId(UUID.randomUUID().toString())
         .signWith(SignatureAlgorithm.HS512, AppConstants.secret).compact();
     }
     public Boolean validateToken(String token, UserDetails userDetails){

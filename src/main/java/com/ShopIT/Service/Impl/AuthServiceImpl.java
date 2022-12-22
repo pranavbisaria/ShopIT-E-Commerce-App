@@ -59,6 +59,7 @@ public class AuthServiceImpl implements AuthService {
         this.userCache.setUserCache(request.getEmail(), otpDto);
         return new ResponseEntity<>(new ApiResponse("OTP has been successfully sent on the registered email id!!", true), HttpStatus.ACCEPTED);
     }
+//Register Email
     public ResponseEntity<?> registerEmail(EmailDto emailDto, String type) throws Exception {
         String email = emailDto.getEmail().trim().toLowerCase();
         Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
@@ -139,7 +140,6 @@ public class AuthServiceImpl implements AuthService {
                 user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
                 this.userRepo.save(user);
                 this.otpService.SuccessRequest(user.getEmail(), user.getFirstname());
-//                return ResponseEntity.status(HttpStatus.OK).body("Chal gyiiii");
                 return new ResponseEntity<>(new ApiResponse("User ID Successfully Created", true), HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(new ApiResponse("Invalid OTP input", false), HttpStatus.UNAUTHORIZED);

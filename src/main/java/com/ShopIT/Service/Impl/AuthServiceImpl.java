@@ -38,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserDetailsService userDetailsService;
     private final JwtTokenHelper jwtTokenHelper;
     private final OTPService otpService;
+    @Override
     public ResponseEntity<?> LoginAPI(JwtAuthRequest request) {
         request.setEmail(request.getEmail().trim().toLowerCase());
         User user = (User)this.userRepo.findByEmail(request.getEmail()).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + request.getEmail(), 0));
@@ -59,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
         this.userCache.setUserCache(request.getEmail(), otpDto);
         return new ResponseEntity<>(new ApiResponse("OTP has been successfully sent on the registered email id!!", true), HttpStatus.ACCEPTED);
     }
+    @Override
     public ResponseEntity<?> registerEmail(EmailDto emailDto, String type) throws Exception {
         String email = emailDto.getEmail().trim().toLowerCase();
         Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
@@ -188,7 +190,7 @@ public class AuthServiceImpl implements AuthService {
             }
         } catch (NullPointerException | JsonProcessingException e) {
             e.printStackTrace();
-            return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.FORBIDDEN);
         }
     }
     @Override
@@ -245,7 +247,7 @@ public class AuthServiceImpl implements AuthService {
                 this.userRepo.save(user);
                 return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), HttpStatus.OK);
             } else {
-                return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.BAD_REQUEST);
             }
         } catch (Exception e) {
             throw new Exception("Cannot able to send the mail to the registered account", e);

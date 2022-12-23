@@ -3,6 +3,8 @@ package com.ShopIT;
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Models.Role;
 import com.ShopIT.Repository.RoleRepo;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
@@ -16,6 +18,7 @@ import java.util.List;
 
 @SpringBootApplication
 @RequiredArgsConstructor
+@OpenAPIDefinition(info = @Info(title = "ShopIT: E-Commerce Application",version = "3.0",description = "Complete APIs for ShopIT - An E-Commerce application"))
 @EnableCaching
 public class ShopItAppApplication implements CommandLineRunner {
 	private final RoleRepo roleRepo;

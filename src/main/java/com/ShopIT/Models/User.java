@@ -29,6 +29,8 @@ public class User implements UserDetails {
     private String gender;
     private String phoneNumber;
     private String profilePhoto;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Profile profile;
     private Boolean active = true;
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user", referencedColumnName = "id"), inverseJoinColumns =  @JoinColumn(name = "role", referencedColumnName = "id"))

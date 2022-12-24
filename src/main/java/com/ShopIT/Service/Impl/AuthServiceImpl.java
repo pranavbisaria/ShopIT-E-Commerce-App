@@ -1,264 +1,125 @@
-package com.ShopIT.Service.Impl;
+package com.ShopIT.Controllers;
 
-import com.ShopIT.Config.AppConstants;
-import com.ShopIT.Config.UserCache;
-import com.ShopIT.Exceptions.ResourceNotFoundException;
-import com.ShopIT.Models.Role;
-import com.ShopIT.Models.User;
-import com.ShopIT.Payloads.ApiResponse;
-import com.ShopIT.Payloads.GoogleSignModel;
-import com.ShopIT.Repository.RoleRepo;
-import com.ShopIT.Repository.UserRepo;
+import com.ShopIT.Payloads.*;
 import com.ShopIT.Security.JwtAuthRequest;
-import com.ShopIT.Security.JwtTokenHelper;
-import com.ShopIT.Service.AuthService;
 import com.ShopIT.Service.JWTTokenGenerator;
-import com.ShopIT.Service.OTPService;
+import com.ShopIT.Service.AuthService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.binary.Base64;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
-
-@Service @RequiredArgsConstructor
-public class AuthServiceImpl implements AuthService {
-    private final UserRepo userRepo;
-    private final PasswordEncoder passwordEncoder;
-    private final RoleRepo roleRepo;
-    private final UserCache userCache;
+@RestController @RequiredArgsConstructor
+@RequestMapping(path ="/api/auth")
+public class AuthController {
+    private final AuthService userService;
     private final JWTTokenGenerator jwtTokenGenerator;
-    private final UserDetailsService userDetailsService;
-    private final JwtTokenHelper jwtTokenHelper;
-    private final OTPService otpService;
-    @Override
-    public ResponseEntity<?> LoginAPI(JwtAuthRequest request) {
-        request.setEmail(request.getEmail().trim().toLowerCase());
-        User user = this.userRepo.findByEmail(request.getEmail()).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + request.getEmail(), 0));
-        if(user.getPassword()==null){
-            return new ResponseEntity<>(new ApiResponse("Please reset your password first!!!", false), HttpStatus.UNAUTHORIZED);
-        }
-        if (user.isEnabled()) {
-            JwtAuthResponse response = this.jwtTokenGenerator.getTokenGenerate(request.getEmail(), request.getPassword());
-            if (response == null) {
-                return new ResponseEntity<>(new ApiResponse("Invalid Password", true), HttpStatus.UNAUTHORIZED);
-            } else {
-                response.setFirstname(user.getFirstname());
-                response.setLastname(user.getLastname());
-                response.setRoles(user.getRoles());
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-        }
-        if (this.userCache.isOTPPresent(request.getEmail())) {
-            this.userCache.clearOTP(request.getEmail());
-        }
-        OtpDto otpDto = new OtpDto(request.getEmail(), this.otpService.OTPRequest(request.getEmail()), (Role)null, false);
-        this.userCache.setUserCache(request.getEmail(), otpDto);
-        return new ResponseEntity<>(new ApiResponse("OTP has been successfully sent on the registered email id!!", true), HttpStatus.ACCEPTED);
+    // User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
+    @Operation(summary = "This is the API to login into the Application, it also acts as a token generator")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login Successful, Access Token and Refresh Token is generated", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "401", description = "Wrong Password", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "(Validation)Invalid Email or Password Format", content = @Content(mediaType = "application/json"))})
+    @PostMapping("/login")
+    public ResponseEntity<?> createToken(@Valid @RequestBody JwtAuthRequest request) {
+        return this.userService.LoginAPI(request);
     }
-    @Override
-    public ResponseEntity<?> registerEmail(EmailDto emailDto, String type) throws Exception {
-        String email = emailDto.getEmail().trim().toLowerCase();
-        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
-        if (type.equals("merchant")) {
-            newRole = this.roleRepo.findById(1003).get();
-            if (this.emailExists(email)) {
-                User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-                if (user.getRoles().contains(newRole)) {
-                    return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
-                }
-                newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
-            }
-        } else if (this.emailExists(email)) {
-            User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-            if (user.getRoles().contains(newRole)) {
-                return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
-            }
-            newRole = (Role)this.roleRepo.findById(1003).get();
-        }
-        try {
-            if (this.userCache.isOTPPresent(email)) {
-                this.userCache.clearOTP(email);
-            }
-            OtpDto otpDto = new OtpDto(email, this.otpService.OTPRequest(email), newRole, false);
-            this.userCache.setUserCache(email, otpDto);
-            return new ResponseEntity<>(new ApiResponse("OTP Sent Success on the entered Email", true), HttpStatus.OK);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(new ApiResponse("Can't able to make your request", false), HttpStatus.SERVICE_UNAVAILABLE);
-        }
+    //Regenerate refresh token
+    @Operation(summary = "This is the API to regenerate access token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "The refresh token is correct and access token is generated", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "408", description = "Token Expired", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "Enter string is not a refresh token", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "(Validation)Invalid Email or Password Format", content = @Content(mediaType = "application/json"))
+    })
+    @GetMapping("/regenerateToken")
+    public ResponseEntity<?> refreshToken(@RequestParam String token) {
+        return this.jwtTokenGenerator.getRefreshTokenGenerate(token);
     }
-    @Override
-    public ResponseEntity<?> verifyToRegister(OtpDto otpDto) throws ExecutionException {
-        String email = otpDto.getEmail().trim().toLowerCase();
-        if (!this.userCache.isOTPPresent(email)) {
-            return new ResponseEntity<>(new ApiResponse("Invalid Request", false), HttpStatus.FORBIDDEN);
-        } else {
-            OtpDto storedOtpDto = this.userCache.getOTP(otpDto.getEmail());
-            if (storedOtpDto.getOne_time_password() == otpDto.getOne_time_password()) {
-                return new ResponseEntity<>(new ApiResponse("OTP Successfully Verified", true), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(new ApiResponse("Invalid OTP!!", false), HttpStatus.NOT_ACCEPTABLE);
-            }
-        }
+    //Register Email
+    @Operation(summary = "Email to verify for signup")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP successfully send to user account", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "409", description = "User already exist", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "503", description = "Can't able to make your request", content = @Content(mediaType = "application/json"))
+    })
+    @PostMapping("/signupEmail/{type}")
+    public ResponseEntity<?> registerEmail(@Valid @RequestBody EmailDto emailDto, @PathVariable String type) throws Exception {
+        return this.userService.registerEmail(emailDto, type);
     }
-    @Override
-    public ResponseEntity<?> signupUser(UserDto userDto, String type) throws ExecutionException {
-        userDto.setFirstname(userDto.getFirstname().trim());
-        userDto.setLastname(userDto.getLastname().trim());
-        String email = userDto.getEmail().trim().toLowerCase();
-        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
-        if (type.equals("merchant")) {
-            newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
-        }
-        if (this.emailExists(email)) {
-            User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-            if (user.getRoles().contains(newRole)) {
-                return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.SERVICE_UNAVAILABLE);
-            }
-        }
-        if (!this.userCache.isOTPPresent(email)) {
-            return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);
-        } else {
-            OtpDto storedOtpDto = this.userCache.getOTP(email);
-            if (storedOtpDto.getOne_time_password() == userDto.getOne_time_password()) {
-                this.userCache.clearOTP(email);
-                User user = new User();
-                user.setEmail(email);
-                user.setFirstname(userDto.getFirstname());
-                user.setLastname(userDto.getLastname());
-                if ((userDto.getGender().equals("f"))) {
-                    user.setProfilePhoto("https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/Female.jpg");
-                    user.setGender("female");
-                } else {
-                    user.setProfilePhoto("https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/Male.jpg");
-                    user.setGender("male");
-                }
-                user.getRoles().add(newRole);
-                user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
-                this.userRepo.save(user);
-                this.otpService.SuccessRequest(user.getEmail(), user.getFirstname());
-//                return ResponseEntity.status(HttpStatus.OK).body("Chal gyiiii");
-                return new ResponseEntity<>(new ApiResponse("User ID Successfully Created", true), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(new ApiResponse("Invalid OTP input", false), HttpStatus.UNAUTHORIZED);
-            }
-        }
+    //Verify OTP for activation of user/host account
+    @Operation(summary = "Email OTP verification")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP verified Successfully", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "403", description = "Invalid Action not required to send the API request", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "406", description = "Invalid OTP", content = @Content(mediaType = "application/json"))
+    })
+    @PostMapping("/verifyotp")
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody OtpDto otpDto) throws ExecutionException {
+        return this.userService.verifyToRegister(otpDto);
     }
-    @Override
-    public ResponseEntity<?> signGoogle(String Token) throws JsonProcessingException, NullPointerException {
-        Token = new String(Base64.decodeBase64(Token.split("\\.")[1]), StandardCharsets.UTF_8);
-        ObjectMapper mapper = (new ObjectMapper()).configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        GoogleSignModel payload = null;
-        try {
-            payload = mapper.readValue(Token, GoogleSignModel.class);
-            if (payload != null) {
-                if (this.verifyGoogleToken(payload)) {
-                    JwtAuthResponse jwtAuthResponse = null;
-                    String email = payload.email();
-                    User user;
-                    if (this.emailExists(email)) {
-                        user = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-                        UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
-                        String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
-                        String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
-                    } else {
-                        user = new User();
-                        user.setEmail(payload.email());
-                        user.setFirstname(payload.given_name());
-                        user.setLastname(payload.family_name());
-                        user.setPassword("Google");
-                        user.setProfilePhoto(payload.picture());
-                        Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
-                        user.getRoles().add(role);
-                        this.userRepo.save(user);
-                        UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
-                        String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
-                        String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
-                    }
-                    return new ResponseEntity<>(jwtAuthResponse, HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(new ApiResponse("Either the token is expired or the token is not authorized", false), HttpStatus.FORBIDDEN);
-                }
-            } else {
-                return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.BAD_REQUEST);
-            }
-        } catch (NullPointerException | JsonProcessingException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.FORBIDDEN);
-        }
+    //SignUP API for user
+    @Operation(summary = "Completing signup process after the registration")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "408", description = "Session Time-Out, please try again", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "200", description = "User registerd successfully", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "503", description = "Invalid Action", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "401", description = "Invalid OTP", content = @Content(mediaType = "application/json"))
+    })
+    @PostMapping("/signupUser/{type}")
+    public ResponseEntity<?> registerUserDetails(@Valid @RequestBody UserDto userDto, @PathVariable String type) throws ExecutionException {
+        return this.userService.signupUser(userDto, type);
     }
-    @Override
-    public ResponseEntity<?> verifyOTPPasswordChange(OtpDto otpDto) throws ExecutionException {
-        String email = otpDto.getEmail().trim().toLowerCase();
-        User userOTP = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-        if (!userOTP.isEnabled() || userOTP.getPassword()==null) {
-            if (!this.userCache.isOTPPresent(email)) {
-                return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);
-            } else {
-                OtpDto storedOtpDto = this.userCache.getOTP(email);
-                return storedOtpDto.getOne_time_password() == otpDto.getOne_time_password() ? new ResponseEntity<>(new ApiResponse("OTP Successfully Verified", true), HttpStatus.OK) : new ResponseEntity<>(new ApiResponse("Invalid OTP!!", false), HttpStatus.NOT_ACCEPTABLE);
-            }
-        } else {
-            return new ResponseEntity<>(new ApiResponse("INVALID ACTION!!!", false), HttpStatus.BAD_REQUEST);
-        }
+    //Sign-in/Signup using google
+    @Operation(summary = "Google Authentication for sign-up and sign-in")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Registered", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "Invalid token", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "403", description = "Either the token is expired or the token is not authorized", content = @Content(mediaType = "application/json"))
+    })
+    @PostMapping("/signGoogle")
+    public ResponseEntity<?> signWithGoogle(@Valid @RequestParam String TokenG) throws JsonProcessingException, NullPointerException  {
+        return this.userService.signGoogle(TokenG);
     }
-    public boolean emailExists(String email) {
-        return this.userRepo.findByEmail(email).isPresent();
+    //Forget Password and otp generator API
+    @Operation(summary = "To send the OTP to the requested email id if the user forget their credentials")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP successfully sent", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "No user with entered email is found", content = @Content(mediaType = "application/json")),
+    })
+    @PostMapping("/forget")
+    public ResponseEntity<?> sendOTP(@Valid @RequestBody EmailDto emailDto) throws Exception {
+        return userService.sendOTPForget(emailDto);
     }
-    @Override
-    public ResponseEntity<?> resetPassword(ForgetPassword forgetPassword) throws ExecutionException {
-        String email = forgetPassword.getEmail().trim().toLowerCase();
-        User userRP = (User)this.userRepo.findByEmail(email).orElseThrow(() -> {
-            return new ResourceNotFoundException("User", "Email :" + email, 0L);
-        });
-        if (!userRP.isEnabled()) {
-            if (!this.userCache.isOTPPresent(email)) {
-                return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);
-            } else {
-                OtpDto storedOtpDto = this.userCache.getOTP(email);
-                if (storedOtpDto.getOne_time_password() == forgetPassword.getOtp()) {
-                    userRP.setPassword(this.passwordEncoder.encode(forgetPassword.getPassword()));
-                    userRP.setEnable(true);
-                    this.userRepo.save(userRP);
-                    return new ResponseEntity<>(new ApiResponse("Password Reset SUCCESS", true), HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(new ApiResponse("Invalid OTP!!!", false), HttpStatus.FORBIDDEN);
-                }
-            }
-        } else {
-            return new ResponseEntity<>(new ApiResponse("Invalid Action!!", false), HttpStatus.NOT_ACCEPTABLE);
-        }
+    //Verify OTP for Password Change
+    @Operation(summary = "To verify the OTP to change the password")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP verified Successfully", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "408", description = "Session Time-Out, please try again", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "406", description = "Invalid OTP", content = @Content(mediaType = "application/json"))
+    })
+    @PostMapping("/verifyPassOtp")
+    public ResponseEntity<?> verifyOtpPassChange(@Valid @RequestBody OtpDto otpDto) throws ExecutionException {
+        return userService.verifyOTPPasswordChange(otpDto);
     }
-    @Override
-    public ResponseEntity<?> sendOTPForget(EmailDto emailDto) throws Exception {
-        String email = emailDto.getEmail().trim().toLowerCase();
-        User user = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-        try {
-            OtpDto otp = new OtpDto(email, this.otpService.OTPRequest(email), (Role)null, true);
-            user.setEnable(false);
-            user.setPassword(null);
-            if (this.userCache.isOTPPresent(email)) {
-                this.userCache.clearOTP(email);
-            }
-            this.userCache.setUserCache(email, otp);
-            this.userRepo.save(user);
-            return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), HttpStatus.OK);
-        } catch (Exception e) {
-            throw new Exception("Cannot able to send the mail to the registered account", e);
-        }
-    }
-    Boolean verifyGoogleToken(GoogleSignModel googleSignModel) {
-        return googleSignModel.azp().equals(AppConstants.GOOGLE_CLIENT_ID) && googleSignModel.iss().equals(AppConstants.GOOGLE_ISSUER) && googleSignModel.exp() * 1000L >= System.currentTimeMillis();
+    //Reset Password OTP to change the password
+    @Operation(summary = "Used to reset the password after verifying the OTP if password is forgot by the user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "408", description = "Invalid OTP input", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "200", description = "Password Reset SUCCESS", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "406", description = "Invalid Action", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "403", description = "Invalid OTP", content = @Content(mediaType = "application/json")),
+    })
+    @PostMapping("/resetpass")
+    public ResponseEntity<?> resetPass(@Valid @RequestBody ForgetPassword forgetPassword) throws ExecutionException {
+        return this.userService.resetPassword(forgetPassword);
     }
 }

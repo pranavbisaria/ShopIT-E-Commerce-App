@@ -2,11 +2,11 @@ package com.ShopIT.Service.Impl;
 
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Config.UserCache;
-import com.ShopIT.Exceptions.Apiexception;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.Role;
 import com.ShopIT.Models.User;
-import com.ShopIT.Payloads.*;
+import com.ShopIT.Payloads.ApiResponse;
+import com.ShopIT.Payloads.GoogleSignModel;
 import com.ShopIT.Repository.RoleRepo;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.JwtAuthRequest;
@@ -25,6 +25,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 
@@ -41,7 +42,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<?> LoginAPI(JwtAuthRequest request) {
         request.setEmail(request.getEmail().trim().toLowerCase());
-        User user = (User)this.userRepo.findByEmail(request.getEmail()).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + request.getEmail(), 0));
+        User user = this.userRepo.findByEmail(request.getEmail()).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + request.getEmail(), 0));
+        if(user.getPassword()==null){
+            return new ResponseEntity<>(new ApiResponse("Please reset your password first!!!", false), HttpStatus.UNAUTHORIZED);
+        }
         if (user.isEnabled()) {
             JwtAuthResponse response = this.jwtTokenGenerator.getTokenGenerate(request.getEmail(), request.getPassword());
             if (response == null) {
@@ -131,10 +135,11 @@ public class AuthServiceImpl implements AuthService {
                 user.setEmail(email);
                 user.setFirstname(userDto.getFirstname());
                 user.setLastname(userDto.getLastname());
-                user.setProfilePhoto("default.png");
                 if ((userDto.getGender().equals("f"))) {
+                    user.setProfilePhoto("https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/Female.jpg");
                     user.setGender("female");
                 } else {
+                    user.setProfilePhoto("https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/Male.jpg");
                     user.setGender("male");
                 }
                 user.getRoles().add(newRole);
@@ -197,7 +202,7 @@ public class AuthServiceImpl implements AuthService {
     public ResponseEntity<?> verifyOTPPasswordChange(OtpDto otpDto) throws ExecutionException {
         String email = otpDto.getEmail().trim().toLowerCase();
         User userOTP = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-        if (!userOTP.isEnabled()) {
+        if (!userOTP.isEnabled() || userOTP.getPassword()==null) {
             if (!this.userCache.isOTPPresent(email)) {
                 return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);
             } else {
@@ -205,7 +210,7 @@ public class AuthServiceImpl implements AuthService {
                 return storedOtpDto.getOne_time_password() == otpDto.getOne_time_password() ? new ResponseEntity<>(new ApiResponse("OTP Successfully Verified", true), HttpStatus.OK) : new ResponseEntity<>(new ApiResponse("Invalid OTP!!", false), HttpStatus.NOT_ACCEPTABLE);
             }
         } else {
-            throw new Apiexception("INVALID ACTION!!!");
+            return new ResponseEntity<>(new ApiResponse("INVALID ACTION!!!", false), HttpStatus.BAD_REQUEST);
         }
     }
     public boolean emailExists(String email) {
@@ -240,20 +245,20 @@ public class AuthServiceImpl implements AuthService {
         String email = emailDto.getEmail().trim().toLowerCase();
         User user = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
         try {
-            if (user.isEnabled()) {
-                OtpDto otp = new OtpDto(email, this.otpService.OTPRequest(email), (Role)null, true);
-                user.setEnable(false);
-                this.userCache.setUserCache(email, otp);
-                this.userRepo.save(user);
-                return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.BAD_REQUEST);
+            OtpDto otp = new OtpDto(email, this.otpService.OTPRequest(email), (Role)null, true);
+            user.setEnable(false);
+            user.setPassword(null);
+            if (this.userCache.isOTPPresent(email)) {
+                this.userCache.clearOTP(email);
             }
+            this.userCache.setUserCache(email, otp);
+            this.userRepo.save(user);
+            return new ResponseEntity<>(new ApiResponse("OTP Sent Success", true), HttpStatus.OK);
         } catch (Exception e) {
             throw new Exception("Cannot able to send the mail to the registered account", e);
         }
     }
     Boolean verifyGoogleToken(GoogleSignModel googleSignModel) {
-        return googleSignModel.azp().equals("1084765789984-2q7ueo55fnj99vh3pleh36dt8giiopnv.apps.googleusercontent.com") && googleSignModel.iss().equals("https://accounts.google.com") && googleSignModel.exp() * 1000L >= System.currentTimeMillis();
+        return googleSignModel.azp().equals(AppConstants.GOOGLE_CLIENT_ID) && googleSignModel.iss().equals(AppConstants.GOOGLE_ISSUER) && googleSignModel.exp() * 1000L >= System.currentTimeMillis();
     }
 }

@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserProfile {
+    private Long Id;
     private String profilePhoto;
     @NotEmpty(message = "First name can't be empty")
     private String firstname;

@@ -1,4 +1,4 @@
-package com.ShopIT.Service;
+package com.ShopIT.Service.Service;
 
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.UserProfile;

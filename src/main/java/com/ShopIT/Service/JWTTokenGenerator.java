@@ -1,6 +1,5 @@
 package com.ShopIT.Service;
 
-import com.ShopIT.Exceptions.Apiexception;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.ApiResponse;
@@ -9,7 +8,6 @@ import com.ShopIT.Payloads.JwtAuthResponse;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.JwtTokenHelper;
 import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Header;
 import io.jsonwebtoken.MalformedJwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -55,7 +53,7 @@ public class JWTTokenGenerator {
         }
     }
 
-    public ResponseEntity<?> getRefreshTokenGenerate(String token) {
+    public ResponseEntity<?> getRefreshTokenGenerate(String token){
         if(token != null){
             try {
                 String username = this.jwtTokenHelper.getUsernameFromToken(token);
@@ -76,16 +74,13 @@ public class JWTTokenGenerator {
                 }
             }
             catch(IllegalArgumentException e){
-                throw new IllegalArgumentException("Unable to get the JWT token!!");
+                return new ResponseEntity<>(new ApiResponse("Unable to get the JWT token!!", false), HttpStatus.BAD_REQUEST);
             }
             catch(ExpiredJwtException e){
-                throw new ExpiredJwtException(e.getHeader(), e.getClaims(), "Refresh Token Expired!!");
+                return new ResponseEntity<>(new ApiResponse("Refresh Token Expired!!", false), HttpStatus.REQUEST_TIMEOUT);
             }
             catch(MalformedJwtException e){
-                throw new MalformedJwtException("Invalid jwt token");
-            }
-            catch(Exception e){
-                return new ResponseEntity<>(new ApiResponse("Unable to get the JWT token!!", false), BAD_REQUEST);
+                return new ResponseEntity<>(new ApiResponse("Invalid jwt token", false), BAD_REQUEST);
             }
         }
         else {

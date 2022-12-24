@@ -1,4 +1,4 @@
-package com.ShopIT.Service.Service;//package com.ShopIT.Service;
+package com.ShopIT.Service;//package com.ShopIT.Service;
 //
 //import com.twilio.exception.ApiException;
 //import org.springframework.stereotype.Service;

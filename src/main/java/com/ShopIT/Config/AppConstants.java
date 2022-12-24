@@ -6,7 +6,6 @@ public class AppConstants {
     public static final int ROLE_MERCHANT = 1003;
     public static final long JWT_ACCESS_TOKEN_VALIDITY = 24 * 60 *60;
     public static final long JWT_REFRESH_TOKEN_VALIDITY = 100 * 24 * 60 *60;
-    public static final long OTP_VALID_DURATION = 10 * 60 * 1000;
     public static final Integer EXPIRE_MINs = 10;
     public static final String GOOGLE_CLIENT_ID = "1084765789984-2q7ueo55fnj99vh3pleh36dt8giiopnv.apps.googleusercontent.com";
     public static final String GOOGLE_ISSUER = "https://accounts.google.com";

@@ -4,17 +4,16 @@ import com.ShopIT.Payloads.OtpDto;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import org.springframework.context.annotation.Configuration;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class UserCache {
     private LoadingCache<String, OtpDto> newUserCache;
 
     public UserCache() {
-        this.newUserCache = CacheBuilder.newBuilder().expireAfterWrite(AppConstants.EXPIRE_MINs, TimeUnit.MINUTES).build(new CacheLoader<String, OtpDto>() {
+        this.newUserCache = CacheBuilder.newBuilder().expireAfterWrite(AppConstants.EXPIRE_MINs, TimeUnit.MINUTES).build(new CacheLoader<>() {
             public OtpDto load(String username) {
                 return null;
             }

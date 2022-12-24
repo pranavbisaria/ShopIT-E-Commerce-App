@@ -10,5 +10,6 @@ public class AppConstants {
     public static final Integer EXPIRE_MINs = 10;
     public static final String GOOGLE_CLIENT_ID = "1084765789984-2q7ueo55fnj99vh3pleh36dt8giiopnv.apps.googleusercontent.com";
     public static final String GOOGLE_ISSUER = "https://accounts.google.com";
+    public static final String path = "https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/";
     public static final String secret = "jwtTokenKeyJwtTokenKeyJwtTokenKeyJwtTokenKeyJwtTokenKeyJwtTokenKeyjwtTokenKeyJwtTokenKey";
 }

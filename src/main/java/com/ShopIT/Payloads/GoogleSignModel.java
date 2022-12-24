@@ -1,4 +1,5 @@
 package com.ShopIT.Payloads;
+
 public record GoogleSignModel (
     String email,
     String picture,

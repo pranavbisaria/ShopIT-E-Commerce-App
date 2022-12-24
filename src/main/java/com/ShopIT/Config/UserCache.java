@@ -4,9 +4,10 @@ import com.ShopIT.Payloads.OtpDto;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import org.springframework.context.annotation.Configuration;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class UserCache {

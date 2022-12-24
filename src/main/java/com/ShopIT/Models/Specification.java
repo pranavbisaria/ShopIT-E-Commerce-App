@@ -1,4 +1,4 @@
-//package com.ShopIT.Models;
+package com.ShopIT.Models;//package com.ShopIT.Models;
 //
 //import jakarta.persistence.Entity;
 //import jakarta.persistence.GeneratedValue;

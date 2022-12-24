@@ -1,4 +1,4 @@
-//package com.ShopIT.Models;
+package com.ShopIT.Models;//package com.ShopIT.Models;
 //
 //import com.fasterxml.jackson.annotation.JsonIgnore;
 //import jakarta.persistence.*;

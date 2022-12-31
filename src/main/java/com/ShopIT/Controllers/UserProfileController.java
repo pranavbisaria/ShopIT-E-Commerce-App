@@ -71,6 +71,4 @@ public class UserProfileController {
     public ResponseEntity<?> SendEmailOTP(@CurrentUser User user, @Valid @RequestBody OtpDto otpDto){
         return this.userService.verifyResetEmailOTP(user, otpDto);
     }
-
-
 }

@@ -1,7 +1,6 @@
 package com.ShopIT.Service.Impl;
 
 import com.ShopIT.Models.User;
-import com.ShopIT.Payloads.UserProfile;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Service.UserService;
 import lombok.RequiredArgsConstructor;

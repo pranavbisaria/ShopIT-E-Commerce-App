@@ -1,7 +1,6 @@
 package com.ShopIT.Service;
 
 import com.ShopIT.Models.User;
-import com.ShopIT.Payloads.UserProfile;
 import org.springframework.http.ResponseEntity;
 
 public interface UserService {

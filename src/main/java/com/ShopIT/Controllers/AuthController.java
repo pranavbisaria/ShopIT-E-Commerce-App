@@ -2,8 +2,6 @@ package com.ShopIT.Controllers;
 
 import com.ShopIT.Payloads.*;
 import com.ShopIT.Security.JwtAuthRequest;
-import com.ShopIT.Service.JWTTokenGenerator;
-import com.ShopIT.Service.AuthService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

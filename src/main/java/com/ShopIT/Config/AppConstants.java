@@ -15,4 +15,5 @@ public class AppConstants {
     public static final String GOOGLE_ISSUER = "https://accounts.google.com";
     public static  final String malePhoto = "https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/Male.jpg";
     public static  final String femalePhoto = "https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/Female.jpg";
+    public static final String HMAC_SHA256_ALGORITHM = "HmacSHA256";
 }

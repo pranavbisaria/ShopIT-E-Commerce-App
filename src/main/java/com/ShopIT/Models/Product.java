@@ -1,43 +1,44 @@
-package com.ShopIT.Models;//package com.ShopIT.Models;
-//
-//import com.fasterxml.jackson.annotation.JsonIgnore;
-//import jakarta.persistence.*;
-//import lombok.AllArgsConstructor;
-//import lombok.Getter;
-//import lombok.NoArgsConstructor;
-//import lombok.Setter;
-//import org.aspectj.weaver.patterns.TypePatternQuestions;
-//
-//import java.util.ArrayList;
-//import java.util.Collections;
-//import java.util.List;
-//import java.util.Set;
-//
-//@Entity
-//@Getter
-//@Setter@AllArgsConstructor
-//@NoArgsConstructor
-//public class Product {
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.UUID)
-//    private String productId;
-//    private String productName;
-//    private double originalPrice;
-//    private double offerPrice;
-//    private Integer rating;
-//    private String easyPaymentOptions;
-//    @ManyToMany
-//    private List<Offer> offers;
-//    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-//    private List<Integer> pincodeAvailForDelivery;
-//    private Warranty warranty;
-//    private String Highlights;
-//    private String services;
-//    @ManyToOne
-//    private Set<User> provider;
-//    private String description;
-//    private Set<Specification> specification;
-//    private String ratingAndReviews;
-//    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-//    private List<QuestionModel> questions;
-//}
+package com.ShopIT.Models;
+import jakarta.persistence.*;
+import lombok.*;
+import java.util.HashSet;
+import java.util.Set;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter@Setter
+@Entity
+public class Product {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long productId;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<Images> imageUrls = new HashSet<>();
+    private String productName;
+    private double originalPrice;
+    private double offerPercentage;
+    private Integer rating;
+    @Column(length = 10000)
+    private String offers;
+    private Long quantityAvailable;
+    private String warranty;
+    @Column(length = 10000)
+    private String Highlights;
+    @Column(length = 10000)
+    private String services;
+    @Column(length = 10000)
+    private String specification;
+    @Column(length = 10000)
+    private String description;
+    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
+    private User provider;
+    @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+    private Set<User> customer = new HashSet<>();
+    private Long NoOfOrders = 0L;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Review> reviews = new HashSet<>();
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<QuestionModel> questions = new HashSet<>(0);
+    @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
+    private Set<Category> category = new HashSet<>();
+}

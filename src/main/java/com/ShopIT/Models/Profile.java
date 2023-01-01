@@ -19,8 +19,8 @@ public class Profile {
     private Long Id;
     @OneToMany
     private Set<Address> address;
-//    @OneToOne
-//    private Cart cart;
+    @OneToOne
+    private Cart cart;
 //    @OneToMany
 //    private Set<Offer> order;
 //    @OneToMany

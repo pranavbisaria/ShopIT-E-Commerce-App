@@ -2,6 +2,7 @@ package com.ShopIT;
 
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Models.Role;
+import com.ShopIT.Repository.RoleRepo;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
-
 import java.util.List;
 
 @SpringBootApplication

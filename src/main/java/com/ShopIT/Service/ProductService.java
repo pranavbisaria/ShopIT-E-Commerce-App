@@ -5,6 +5,7 @@ import com.ShopIT.Models.PageResponse;
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
 import com.ShopIT.Payloads.PageableDto;
+import com.ShopIT.Payloads.Products.DisplayProductDto;
 import com.ShopIT.Payloads.Products.ProductDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;

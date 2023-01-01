@@ -1,19 +1,28 @@
 package com.ShopIT.Models;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.Set;
 
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 public class Profile {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long Id;
     @OneToMany
     private Set<Address> address;
-    private String phoneNumber;
+    @OneToOne
+    private Cart cart;
 //    @OneToMany
-//    private Set<Order> order;
+//    private Set<Offer> order;
 //    @OneToMany
 //    private Set<Payments> payments;
 //    private String coupons;

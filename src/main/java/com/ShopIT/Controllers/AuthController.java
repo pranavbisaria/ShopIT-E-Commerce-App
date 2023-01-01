@@ -1,18 +1,21 @@
 package com.ShopIT.Controllers;
 
-import com.ShopIT.Payloads.*;
+import com.ShopIT.Payloads.EmailDto;
+import com.ShopIT.Payloads.ForgetPassword;
+import com.ShopIT.Payloads.OtpDto;
+import com.ShopIT.Payloads.UserDto;
 import com.ShopIT.Security.JwtAuthRequest;
-import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.AuthService;
+import com.ShopIT.Service.JWTTokenGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 import java.util.concurrent.ExecutionException;
 @RestController @RequiredArgsConstructor
@@ -20,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 public class AuthController {
     private final AuthService userService;
     private final JWTTokenGenerator jwtTokenGenerator;
-    // User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
+// User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
     @Operation(summary = "This is the API to login into the Application, it also acts as a token generator")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Login Successful, Access Token and Refresh Token is generated", content = @Content(mediaType = "application/json")),
@@ -31,7 +34,7 @@ public class AuthController {
     public ResponseEntity<?> createToken(@Valid @RequestBody JwtAuthRequest request) {
         return this.userService.LoginAPI(request);
     }
-    //Regenerate refresh token
+//Regenerate refresh token
     @Operation(summary = "This is the API to regenerate access token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "The refresh token is correct and access token is generated", content = @Content(mediaType = "application/json")),
@@ -44,7 +47,7 @@ public class AuthController {
     public ResponseEntity<?> refreshToken(@RequestParam String token) {
         return this.jwtTokenGenerator.getRefreshTokenGenerate(token);
     }
-    //Register Email
+//Register Email
     @Operation(summary = "Email to verify for signup")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OTP successfully send to user account", content = @Content(mediaType = "application/json")),
@@ -55,7 +58,7 @@ public class AuthController {
     public ResponseEntity<?> registerEmail(@Valid @RequestBody EmailDto emailDto, @PathVariable String type) throws Exception {
         return this.userService.registerEmail(emailDto, type);
     }
-    //Verify OTP for activation of user/host account
+//Verify OTP for activation of user/host account
     @Operation(summary = "Email OTP verification")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OTP verified Successfully", content = @Content(mediaType = "application/json")),
@@ -78,7 +81,7 @@ public class AuthController {
     public ResponseEntity<?> registerUserDetails(@Valid @RequestBody UserDto userDto, @PathVariable String type) throws ExecutionException {
         return this.userService.signupUser(userDto, type);
     }
-    //Sign-in/Signup using google
+//Sign-in/Signup using google
     @Operation(summary = "Google Authentication for sign-up and sign-in")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Registered", content = @Content(mediaType = "application/json")),
@@ -89,7 +92,7 @@ public class AuthController {
     public ResponseEntity<?> signWithGoogle(@Valid @RequestParam String TokenG) throws JsonProcessingException, NullPointerException  {
         return this.userService.signGoogle(TokenG);
     }
-    //Forget Password and otp generator API
+//Forget Password and otp generator API
     @Operation(summary = "To send the OTP to the requested email id if the user forget their credentials")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OTP successfully sent", content = @Content(mediaType = "application/json")),
@@ -99,7 +102,7 @@ public class AuthController {
     public ResponseEntity<?> sendOTP(@Valid @RequestBody EmailDto emailDto) throws Exception {
         return userService.sendOTPForget(emailDto);
     }
-    //Verify OTP for Password Change
+//Verify OTP for Password Change
     @Operation(summary = "To verify the OTP to change the password")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OTP verified Successfully", content = @Content(mediaType = "application/json")),
@@ -110,7 +113,7 @@ public class AuthController {
     public ResponseEntity<?> verifyOtpPassChange(@Valid @RequestBody OtpDto otpDto) throws ExecutionException {
         return userService.verifyOTPPasswordChange(otpDto);
     }
-    //Reset Password OTP to change the password
+//Reset Password OTP to change the password
     @Operation(summary = "Used to reset the password after verifying the OTP if password is forgot by the user")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "408", description = "Invalid OTP input", content = @Content(mediaType = "application/json")),

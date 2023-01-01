@@ -3,6 +3,7 @@ package com.ShopIT.Payloads;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +21,7 @@ public class UserProfile {
     @Email(message = "Invalid Email")
     private String email;
     private String gender;
+    @Size(min = 10, max = 10)
     @Pattern(regexp="(^$|[0-9]{10})", message = "Phone number must be 10 digit long")
     private String phoneNumber;
 }

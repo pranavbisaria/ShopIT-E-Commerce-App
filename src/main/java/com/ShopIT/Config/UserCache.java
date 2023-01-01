@@ -1,56 +1,41 @@
 package com.ShopIT.Config;
 
-import com.ShopIT.Payloads.OtpDto;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class UserCache {
-    private LoadingCache<String, OtpDto> newUserCache;
+    private LoadingCache<String, Object> newUserCache;
 
     public UserCache() {
         this.newUserCache = CacheBuilder.newBuilder().expireAfterWrite(AppConstants.EXPIRE_MINs, TimeUnit.MINUTES).build(new CacheLoader<>() {
-            public OtpDto load(String username) {
+            public Object load(String key) {
                 return null;
             }
         });
     }
-
-    public void setUserCache(String username, OtpDto otpDto) {
+    public void setUserCache(String username, Object object) {
         try {
-            this.newUserCache.put(username, otpDto);
+            this.newUserCache.put(username, object);
         } catch (Exception var4) {
             var4.printStackTrace();
         }
-
     }
-
-    public OtpDto getOTP(String username) throws ExecutionException {
+    public Object getCache(String key) {
         try {
-            return (OtpDto)this.newUserCache.get(username);
+            return this.newUserCache.get(key);
         } catch (Exception var3) {
             return null;
         }
     }
-
-    public Boolean isOTPPresent(String username) {
-        OtpDto otpDto = (OtpDto)this.newUserCache.getIfPresent(username);
-        return otpDto != null;
+    public Boolean isCachePresent(String username) {
+        Object object = this.newUserCache.getIfPresent(username);
+        return object != null;
     }
-
-    public void clearOTP(String username) {
+    public void clearCache(String username) {
         this.newUserCache.invalidate(username);
-    }
-
-    public LoadingCache<String, OtpDto> getNewUserCache() {
-        return this.newUserCache;
-    }
-
-    public void setNewUserCache(final LoadingCache<String, OtpDto> newUserCache) {
-        this.newUserCache = newUserCache;
     }
 }

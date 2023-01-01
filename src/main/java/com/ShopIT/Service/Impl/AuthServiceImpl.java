@@ -56,10 +56,10 @@ public class AuthServiceImpl implements AuthService {
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
-        if (this.userCache.isOTPPresent(request.getEmail())) {
-            this.userCache.clearOTP(request.getEmail());
+        if (this.userCache.isCachePresent(request.getEmail())) {
+            this.userCache.clearCache(request.getEmail());
         }
-        OtpDto otpDto = new OtpDto(request.getEmail(), this.otpService.OTPRequest(request.getEmail()), (Role)null, false);
+        OtpDto otpDto = new OtpDto(request.getEmail(), this.otpService.OTPRequest(request.getEmail()), null, false);
         this.userCache.setUserCache(request.getEmail(), otpDto);
         return new ResponseEntity<>(new ApiResponse("OTP has been successfully sent on the registered email id!!", true), HttpStatus.ACCEPTED);
     }
@@ -84,8 +84,8 @@ public class AuthServiceImpl implements AuthService {
             newRole = (Role)this.roleRepo.findById(1003).get();
         }
         try {
-            if (this.userCache.isOTPPresent(email)) {
-                this.userCache.clearOTP(email);
+            if (this.userCache.isCachePresent(email)) {
+                this.userCache.clearCache(email);
             }
             OtpDto otpDto = new OtpDto(email, this.otpService.OTPRequest(email), newRole, false);
             this.userCache.setUserCache(email, otpDto);
@@ -98,10 +98,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<?> verifyToRegister(OtpDto otpDto) throws ExecutionException {
         String email = otpDto.getEmail().trim().toLowerCase();
-        if (!this.userCache.isOTPPresent(email)) {
+        if (!this.userCache.isCachePresent(email)) {
             return new ResponseEntity<>(new ApiResponse("Invalid Request", false), HttpStatus.FORBIDDEN);
         } else {
-            OtpDto storedOtpDto = this.userCache.getOTP(otpDto.getEmail());
+            OtpDto storedOtpDto = (OtpDto)this.userCache.getCache(otpDto.getEmail());
             if (storedOtpDto.getOne_time_password() == otpDto.getOne_time_password()) {
                 return new ResponseEntity<>(new ApiResponse("OTP Successfully Verified", true), HttpStatus.OK);
             } else {
@@ -124,28 +124,27 @@ public class AuthServiceImpl implements AuthService {
                 return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.SERVICE_UNAVAILABLE);
             }
         }
-        if (!this.userCache.isOTPPresent(email)) {
+        if (!this.userCache.isCachePresent(email)) {
             return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);
         } else {
-            OtpDto storedOtpDto = this.userCache.getOTP(email);
+            OtpDto storedOtpDto = (OtpDto)this.userCache.getCache(email);
             if (storedOtpDto.getOne_time_password() == userDto.getOne_time_password()) {
-                this.userCache.clearOTP(email);
+                this.userCache.clearCache(email);
                 User user = new User();
                 user.setEmail(email);
                 user.setFirstname(userDto.getFirstname());
                 user.setLastname(userDto.getLastname());
                 if ((userDto.getGender().equals("f"))) {
-                    user.setProfilePhoto("https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/Female.jpg");
+                    user.setProfilePhoto(AppConstants.femalePhoto);
                     user.setGender("female");
                 } else {
-                    user.setProfilePhoto("https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/Male.jpg");
-                    user.setGender("male");
+                    user.setProfilePhoto(AppConstants.malePhoto);
+                    user.setGender("male")  ;
                 }
                 user.getRoles().add(newRole);
                 user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
                 this.userRepo.save(user);
                 this.otpService.SuccessRequest(user.getEmail(), user.getFirstname());
-//                return ResponseEntity.status(HttpStatus.OK).body("Chal gyiiii");
                 return new ResponseEntity<>(new ApiResponse("User ID Successfully Created", true), HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(new ApiResponse("Invalid OTP input", false), HttpStatus.UNAUTHORIZED);
@@ -202,10 +201,10 @@ public class AuthServiceImpl implements AuthService {
         String email = otpDto.getEmail().trim().toLowerCase();
         User userOTP = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
         if (!userOTP.isEnabled() || userOTP.getPassword()==null) {
-            if (!this.userCache.isOTPPresent(email)) {
+            if (!this.userCache.isCachePresent(email)) {
                 return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);
             } else {
-                OtpDto storedOtpDto = this.userCache.getOTP(email);
+                OtpDto storedOtpDto = (OtpDto)this.userCache.getCache(email);
                 return storedOtpDto.getOne_time_password() == otpDto.getOne_time_password() ? new ResponseEntity<>(new ApiResponse("OTP Successfully Verified", true), HttpStatus.OK) : new ResponseEntity<>(new ApiResponse("Invalid OTP!!", false), HttpStatus.NOT_ACCEPTABLE);
             }
         } else {
@@ -216,16 +215,16 @@ public class AuthServiceImpl implements AuthService {
         return this.userRepo.findByEmail(email).isPresent();
     }
     @Override
-    public ResponseEntity<?> resetPassword(ForgetPassword forgetPassword) throws ExecutionException {
+    public ResponseEntity<?> resetPassword(ForgetPassword forgetPassword) {
         String email = forgetPassword.getEmail().trim().toLowerCase();
         User userRP = (User)this.userRepo.findByEmail(email).orElseThrow(() -> {
             return new ResourceNotFoundException("User", "Email :" + email, 0L);
         });
         if (!userRP.isEnabled()) {
-            if (!this.userCache.isOTPPresent(email)) {
+            if (!this.userCache.isCachePresent(email)) {
                 return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);
             } else {
-                OtpDto storedOtpDto = this.userCache.getOTP(email);
+                OtpDto storedOtpDto = (OtpDto)this.userCache.getCache(email);
                 if (storedOtpDto.getOne_time_password() == forgetPassword.getOtp()) {
                     userRP.setPassword(this.passwordEncoder.encode(forgetPassword.getPassword()));
                     userRP.setEnable(true);
@@ -247,8 +246,8 @@ public class AuthServiceImpl implements AuthService {
             OtpDto otp = new OtpDto(email, this.otpService.OTPRequest(email), (Role)null, true);
             user.setEnable(false);
             user.setPassword(null);
-            if (this.userCache.isOTPPresent(email)) {
-                this.userCache.clearOTP(email);
+            if (this.userCache.isCachePresent(email)) {
+                this.userCache.clearCache(email);
             }
             this.userCache.setUserCache(email, otp);
             this.userRepo.save(user);

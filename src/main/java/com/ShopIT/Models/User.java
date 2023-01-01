@@ -28,10 +28,11 @@ public class User implements UserDetails {
     private String email;
     private String password;
     private String gender;
+    @Column(unique = true)
     private String phoneNumber;
     @Column(length = 1000)
     private String profilePhoto;
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Profile profile;
     private Boolean active = true;
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)

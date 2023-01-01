@@ -2,7 +2,6 @@ package com.ShopIT;
 
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Models.Role;
-import com.ShopIT.Repository.RoleRepo;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;

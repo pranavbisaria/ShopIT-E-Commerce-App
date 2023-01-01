@@ -1,6 +1,5 @@
 package com.ShopIT.Exceptions;
 
-import com.ShopIT.Payloads.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;

@@ -53,7 +53,7 @@ public class StorageServices {
         s3Client.deleteObject(bucketName, filename);
         return filename+" has been successfully deleted";
     }
-
+//----------------------------------------------------------------------------------------------------------------------------
     private File convertMultiPartFileToFile(MultipartFile file){
         File convertedFile = new File(Objects.requireNonNull(file.getOriginalFilename()));
         try(FileOutputStream fos = new FileOutputStream((convertedFile))){

@@ -1,5 +1,6 @@
 package com.ShopIT.Service;
 
+import com.ShopIT.Exceptions.Apiexception;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.ApiResponse;

@@ -1,13 +1,16 @@
 package com.ShopIT.Payloads.Products;
 
-import com.ShopIT.Models.QuestionModel;
+import com.ShopIT.Models.*;
+import com.ShopIT.Payloads.Categories.CategoryDTO;
+import com.ShopIT.Payloads.UserDto;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
+import java.util.HashSet;
 import java.util.Set;
+
+import static jakarta.persistence.GenerationType.UUID;
 
 @AllArgsConstructor
 @Getter@Setter

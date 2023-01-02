@@ -1,6 +1,7 @@
 package com.ShopIT.Controllers;
 
-import com.ShopIT.Models.*;
+import com.ShopIT.Models.Images;
+import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.ApiResponse;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.ProductDto;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 @RestController
@@ -24,7 +26,7 @@ public class ProductController {
 
 //----------------------------------------------------Products-----------------------------------------------------------------------------
 
-    //Add Product
+//Add Product
     @PreAuthorize("hasAnyRole('ADMIN', 'MERCHANT')")
     @PostMapping("/add/{categoryId}")
     public ResponseEntity<?> addProduct(@CurrentUser User user, @RequestPart("images") MultipartFile[] images, @RequestPart ProductDto productDto, @PathVariable("categoryId") Integer categoryId){
@@ -130,7 +132,7 @@ public class ProductController {
         return this.productService.decreaseProductQuantity(user, productId);
     }
 
-    //---------------------------------------------------------------WishList--------------------------------------------------------
+//---------------------------------------------------------------WishList--------------------------------------------------------
     @PreAuthorize("hasAnyRole('ADMIN', 'NORMAL')")
     @PatchMapping("/wishlist/add/{productId}")
     public ResponseEntity<?> addToWishList(@CurrentUser User user, @PathVariable("productId") Long productId){

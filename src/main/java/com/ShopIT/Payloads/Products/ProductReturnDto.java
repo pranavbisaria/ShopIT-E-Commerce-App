@@ -1,8 +1,9 @@
 package com.ShopIT.Payloads.Products;
 
-import com.ShopIT.Models.*;
-import com.ShopIT.Payloads.Categories.CategoryDTO;
-import com.ShopIT.Payloads.UserDto;
+import com.ShopIT.Models.Category;
+import com.ShopIT.Models.Images;
+import com.ShopIT.Models.QuestionModel;
+import com.ShopIT.Models.Review;
 import com.ShopIT.Payloads.UserShow;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;

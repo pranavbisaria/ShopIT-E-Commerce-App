@@ -1,11 +1,10 @@
 package com.ShopIT.Service;
 
 import com.ShopIT.Models.Images;
-import com.ShopIT.Models.PageResponse;
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
+import com.ShopIT.Payloads.PageResponse;
 import com.ShopIT.Payloads.PageableDto;
-import com.ShopIT.Payloads.Products.DisplayProductDto;
 import com.ShopIT.Payloads.Products.ProductDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,4 +43,16 @@ public interface ProductService {
     ResponseEntity<?> addProductToCart(User user, Long productId);
 
     ResponseEntity<?> removeProductFromCart(User user, Long productId);
+
+    PageResponse getAllProductsInCart(User user, PageableDto pageable);
+
+    ResponseEntity<?> increaseProductQuantity(User user, Long productId);
+
+    ResponseEntity<?> decreaseProductQuantity(User user, Long productId);
+
+    ResponseEntity<?> addToWishlist(User user, Long productId);
+
+    ResponseEntity<?> removeFromWishlist(User user, Long productId);
+
+    PageResponse getWishList(User user, PageableDto pageable);
 }

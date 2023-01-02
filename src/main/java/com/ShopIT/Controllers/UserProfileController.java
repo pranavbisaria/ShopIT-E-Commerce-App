@@ -7,7 +7,6 @@ import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.CurrentUser;
 import com.ShopIT.Service.StorageServices;
 import com.ShopIT.Service.UserService;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -17,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import static org.springframework.http.HttpStatus.OK;
 
@@ -70,5 +68,21 @@ public class UserProfileController {
     @PatchMapping("/resetEmailID")
     public ResponseEntity<?> SendEmailOTP(@CurrentUser User user, @Valid @RequestBody OtpDto otpDto){
         return this.userService.verifyResetEmailOTP(user, otpDto);
+    }
+    @GetMapping("/address/get")
+    public ResponseEntity<?> getAllAddress(@CurrentUser User user){
+        return this.userService.getAllAddress(user);
+    }
+    @PostMapping("/addAddress")
+    public ResponseEntity<?> addAddress(@CurrentUser User user, @Valid @RequestBody AddressDto addressDto){
+        return this.userService.addAddress(user, addressDto);
+    }
+    @PutMapping("/updateAddress/{addressId}")
+    public ResponseEntity<?> updateAddress(@CurrentUser User user, @Valid @RequestBody AddressDto addressDto, @PathVariable("addressId") Long addressId){
+        return this.userService.updateAddress(user, addressDto, addressId);
+    }
+    @DeleteMapping("/removeAddress/{addressId}")
+    public ResponseEntity<?> removeAddress(@CurrentUser User user, @PathVariable("addressId") Long addressId) {
+        return this.userService.removeAddress(user, addressId);
     }
 }

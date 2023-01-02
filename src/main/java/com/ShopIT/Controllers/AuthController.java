@@ -1,18 +1,21 @@
 package com.ShopIT.Controllers;
 
-import com.ShopIT.Payloads.*;
+import com.ShopIT.Payloads.EmailDto;
+import com.ShopIT.Payloads.ForgetPassword;
+import com.ShopIT.Payloads.OtpDto;
+import com.ShopIT.Payloads.UserDto;
 import com.ShopIT.Security.JwtAuthRequest;
-import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.AuthService;
+import com.ShopIT.Service.JWTTokenGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 import java.util.concurrent.ExecutionException;
 @RestController @RequiredArgsConstructor

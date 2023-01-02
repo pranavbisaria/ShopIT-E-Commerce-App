@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -21,9 +21,11 @@ public class MyOrders {
     private Integer orderId;
     private Date dateOfPurchase;
     private Date created_at;
-    @OneToMany
-    private List<DeliveryStatus> deliveryStatus;
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
+    private Address address;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<DeliveryStatus> deliveryStatus = new HashSet<>();
+    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
     private User user;
     private long amount;
     private String id;

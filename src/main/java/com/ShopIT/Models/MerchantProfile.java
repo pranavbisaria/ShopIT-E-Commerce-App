@@ -14,20 +14,18 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class Profile {
+public class MerchantProfile {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<Address> address = new HashSet<>();
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Cart cart = new Cart();
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<MyOrders> myOrders = new HashSet<>();
+    private Set<MyOrders> paymentsReceived = new HashSet<>();
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Review> myReviews = new HashSet<>();
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private WishList wishList = new WishList();
-//    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Product> products = new HashSet<>();
+//    @ManyToMany
 //    private Set<Notification> notifications;
 }

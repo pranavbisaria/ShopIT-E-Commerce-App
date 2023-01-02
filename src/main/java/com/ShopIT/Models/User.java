@@ -1,6 +1,7 @@
 package com.ShopIT.Models;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,8 +15,8 @@ import java.util.stream.Collectors;
 
 @Entity
 @NoArgsConstructor
-@Getter
-@Setter
+@Getter@Setter
+@AllArgsConstructor
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -31,8 +32,10 @@ public class User implements UserDetails {
     private String phoneNumber;
     @Column(length = 1000)
     private String profilePhoto;
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Profile profile;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Profile profile = null;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private MerchantProfile merchantProfile = null;
     private Boolean active = true;
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user", referencedColumnName = "id"), inverseJoinColumns =  @JoinColumn(name = "role", referencedColumnName = "id"))

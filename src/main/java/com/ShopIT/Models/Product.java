@@ -22,6 +22,7 @@ public class Product {
     private String offers;
     private Long quantityAvailable;
     private String warranty;
+    private Long quantityAllowedPerUser=5L;
     @Column(length = 10000)
     private String Highlights;
     @Column(length = 10000)

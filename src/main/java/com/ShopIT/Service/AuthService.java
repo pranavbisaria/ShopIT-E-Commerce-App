@@ -1,5 +1,9 @@
 package com.ShopIT.Service;
-import com.ShopIT.Payloads.*;
+
+import com.ShopIT.Payloads.EmailDto;
+import com.ShopIT.Payloads.ForgetPassword;
+import com.ShopIT.Payloads.OtpDto;
+import com.ShopIT.Payloads.UserDto;
 import com.ShopIT.Security.JwtAuthRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.http.ResponseEntity;

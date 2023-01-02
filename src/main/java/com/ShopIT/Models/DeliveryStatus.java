@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter@Setter
@@ -15,10 +16,10 @@ import java.util.Set;
 @Entity
 public class DeliveryStatus {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private long Id;
     private Date date;
     private String status;
-    @OneToMany
-    private Set<Product> product;
+    @OneToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
+    private Set<Product> product = new HashSet<>();
 }

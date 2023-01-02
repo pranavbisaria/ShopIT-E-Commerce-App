@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -17,19 +18,16 @@ public class Profile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long Id;
-    @OneToMany
-    private Set<Address> address;
-    @OneToOne
-    private Cart cart;
-//    @OneToMany
-//    private Set<Offer> order;
-//    @OneToMany
-//    private Set<Payments> payments;
-//    private String coupons;
-//    @ManyToMany
-//    private Set<Product> products;
-//    @OneToMany
-//    private Set<Review> reviews;
-//    @ManyToMany
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<Address> address = new HashSet<>();
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Cart cart = new Cart();
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<MyOrders> myOrders = new HashSet<>();
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<Review> myReviews = new HashSet<>();
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private WishList wishList = new WishList();
+//    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 //    private Set<Notification> notifications;
 }

@@ -3,6 +3,7 @@ import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.*;
 import com.ShopIT.Payloads.ApiResponse;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
+import com.ShopIT.Payloads.PageResponse;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.DisplayProductDto;
 import com.ShopIT.Payloads.Products.ProductDto;

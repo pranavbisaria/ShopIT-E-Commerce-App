@@ -3,6 +3,7 @@ package com.ShopIT.Models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter@Setter
@@ -11,8 +12,8 @@ import java.util.List;
 @Entity
 public class Cart {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
-    @OneToMany
-    private List<Product> cartProducts;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<ProductInCart> cartProducts = new ArrayList<>();
 }

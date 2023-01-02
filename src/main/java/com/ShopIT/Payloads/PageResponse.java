@@ -1,4 +1,4 @@
-package com.ShopIT.Models;
+package com.ShopIT.Payloads;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

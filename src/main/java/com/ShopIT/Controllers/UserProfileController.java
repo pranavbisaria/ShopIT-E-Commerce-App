@@ -71,4 +71,20 @@ public class UserProfileController {
     public ResponseEntity<?> SendEmailOTP(@CurrentUser User user, @Valid @RequestBody OtpDto otpDto){
         return this.userService.verifyResetEmailOTP(user, otpDto);
     }
+    @GetMapping("/address/get")
+    public ResponseEntity<?> getAllAddress(@CurrentUser User user){
+        return this.userService.getAllAddress(user);
+    }
+    @PostMapping("/addAddress")
+    public ResponseEntity<?> addAddress(@CurrentUser User user, @Valid @RequestBody AddressDto addressDto){
+        return this.userService.addAddress(user, addressDto);
+    }
+    @PutMapping("/updateAddress/{addressId}")
+    public ResponseEntity<?> updateAddress(@CurrentUser User user, @Valid @RequestBody AddressDto addressDto, @PathVariable("addressId") Long addressId){
+        return this.userService.updateAddress(user, addressDto, addressId);
+    }
+    @DeleteMapping("/removeAddress/{addressId}")
+    public ResponseEntity<?> removeAddress(@CurrentUser User user, @PathVariable("addressId") Long addressId) {
+        return this.userService.removeAddress(user, addressId);
+    }
 }

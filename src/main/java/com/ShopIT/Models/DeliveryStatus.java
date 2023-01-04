@@ -21,5 +21,5 @@ public class DeliveryStatus {
     private Date date;
     private String status;
     @OneToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
-    private Set<Product> product = new HashSet<>();
+    private Set<Product> product = new HashSet<>(0);
 }

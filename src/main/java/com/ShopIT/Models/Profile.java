@@ -19,13 +19,13 @@ public class Profile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long Id;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Address> address = new HashSet<>();
+    private Set<Address> address = new HashSet<>(0);
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Cart cart = new Cart();
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<MyOrders> myOrders = new HashSet<>();
+    private Set<MyOrders> myOrders = new HashSet<>(0);
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Review> myReviews = new HashSet<>();
+    private Set<Review> myReviews = new HashSet<>(0);
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private WishList wishList = new WishList();
 //    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)

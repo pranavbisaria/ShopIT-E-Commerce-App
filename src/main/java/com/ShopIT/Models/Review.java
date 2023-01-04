@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -20,7 +21,7 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer Id;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Images> images = new HashSet<>();
+    private Set<Images> images = new HashSet<>(0);
     private Integer rating = null;
     @Column(length = 10000)
     private String description;

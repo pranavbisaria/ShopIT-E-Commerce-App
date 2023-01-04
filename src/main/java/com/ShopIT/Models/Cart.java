@@ -15,5 +15,5 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<ProductInCart> cartProducts = new ArrayList<>();
+    private List<ProductInCart> cartProducts = new ArrayList<>(0);
 }

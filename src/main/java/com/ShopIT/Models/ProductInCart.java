@@ -1,5 +1,6 @@
 package com.ShopIT.Models;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,6 +18,7 @@ public class ProductInCart {
     private Long Id;
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
     private Product product;
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
     private Date dateOfOrder;
     private Long noOfProducts = 1L;
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)

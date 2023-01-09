@@ -13,7 +13,7 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long productId;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Images> imageUrls = new HashSet<>();
+    private Set<Images> imageUrls = new HashSet<>(0);
     private String productName;
     private double originalPrice;
     private double offerPercentage;
@@ -34,12 +34,12 @@ public class Product {
     @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     private User provider;
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
-    private Set<User> customer = new HashSet<>();
+    private Set<User> customer = new HashSet<>(0);
     private Long NoOfOrders = 0L;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<Review> reviews = new HashSet<>();
+    private Set<Review> reviews = new HashSet<>(0);
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<QuestionModel> questions = new HashSet<>(0);
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
-    private Set<Category> category = new HashSet<>();
+    private Set<Category> category = new HashSet<>(0);
 }

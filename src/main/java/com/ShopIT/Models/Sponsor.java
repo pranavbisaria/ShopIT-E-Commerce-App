@@ -1,11 +1,9 @@
 package com.ShopIT.Models;
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,5 +16,5 @@ public class Sponsor {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer Id;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Images> images = new ArrayList<>();
+    private List<Images> images = new ArrayList<>(0);
 }

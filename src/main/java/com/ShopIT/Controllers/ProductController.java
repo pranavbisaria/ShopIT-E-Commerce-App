@@ -1,7 +1,6 @@
 package com.ShopIT.Controllers;
 
-import com.ShopIT.Models.Images;
-import com.ShopIT.Models.User;
+import com.ShopIT.Models.*;
 import com.ShopIT.Payloads.ApiResponse;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.ProductDto;
@@ -14,8 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
+import static org.springframework.http.HttpStatus.OK;
 
 @RestController
 @RequiredArgsConstructor
@@ -38,7 +37,7 @@ public class ProductController {
                                             @RequestParam(value ="sortBy", defaultValue = "productId", required = false) String sortBy,
                                             @RequestParam(value ="sortDir", defaultValue = "asc", required = false) String sortDir
     ){
-        return new ResponseEntity<>(this.productService.getAllProducts(new PageableDto(pageNumber, pageSize, sortBy, sortDir)), HttpStatus.OK);
+        return new ResponseEntity<>(this.productService.getAllProducts(new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
     }
     @GetMapping("/get/{productId}")
     public ResponseEntity<?> getProductById(@PathVariable("productId") Long productId){
@@ -71,7 +70,7 @@ public class ProductController {
                                                    @RequestParam(value ="sortBy", defaultValue = "productId", required = false) String sortBy,
                                                    @RequestParam(value ="sortDir", defaultValue = "asc", required = false) String sortDir
     ){
-        return new ResponseEntity<>(this.productService.getAllProductByCategory(categoryId, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), HttpStatus.OK);
+        return new ResponseEntity<>(this.productService.getAllProductByCategory(categoryId, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
     }
 
 // ---------------------------------------------------------------CART----------------------------------------------------------------------------
@@ -101,7 +100,7 @@ public class ProductController {
             return new ResponseEntity<>(new ApiResponse("Invalid Action!!", false), HttpStatus.NOT_ACCEPTABLE);
         }
         try {
-            return new ResponseEntity<>(this.productService.getAllProductsInCart(user, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), HttpStatus.OK);
+            return new ResponseEntity<>(this.productService.getAllProductsInCart(user, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
         }
         catch(Exception e){
             return new ResponseEntity<>(e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -155,10 +154,15 @@ public class ProductController {
             return new ResponseEntity<>(new ApiResponse("Invalid Action!!", false), HttpStatus.NOT_ACCEPTABLE);
         }
         try {
-            return new ResponseEntity<>(this.productService.getWishList(user, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), HttpStatus.OK);
+            return new ResponseEntity<>(this.productService.getWishList(user, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
         }
         catch(Exception e){
             return new ResponseEntity<>(e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+//---------------------------------------------Search & Filter-----------------------------------------------------------------------
+    @GetMapping("/search/{keyword}")
+    public ResponseEntity<?> searchProduct(@PathVariable("keyword") String keyword){
+        return new ResponseEntity<>(this.productRepo.findAll(keyword), OK);
     }
 }

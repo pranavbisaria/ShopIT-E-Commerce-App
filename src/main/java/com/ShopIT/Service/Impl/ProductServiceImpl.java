@@ -103,7 +103,15 @@ public class ProductServiceImpl implements ProductService {
         Pageable p = PageRequest.of(pN, pS, sort);
         Page<Product> pageProducts = this.productRepo.findAll(p);
         List<Product> allProducts = pageProducts.getContent();
-        return new PageResponse(allProducts.stream().map((categories) -> this.modelMapper.map(categories, DisplayProductDto.class)).collect(Collectors.toList()),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            ArrayList<Images> elements = new ArrayList<>(product.getImageUrls());
+//            Images images = (Images) (product.getImageUrls().toArray())[0];
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(elements.get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
     @Override
     public ResponseEntity<?> getProductById(Long productId){
@@ -204,7 +212,15 @@ public class ProductServiceImpl implements ProductService {
         Pageable p = PageRequest.of(pN, pS, sort);
         Page<Product> pageProducts = this.productRepo.findByCategoryContaining(category, p);
         List<Product> allProducts = pageProducts.getContent();
-        return new PageResponse(allProducts.stream().map((categories) -> this.modelMapper.map(categories, DisplayProductDto.class)).collect(Collectors.toList()),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            ArrayList<Images> elements = new ArrayList<>(product.getImageUrls());
+//            Images images = (Images) (product.getImageUrls().toArray())[0];
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(elements.get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
 
 //----------------------------------------------------------CART--------------------------------------------------------------------------------
@@ -316,6 +332,14 @@ public class ProductServiceImpl implements ProductService {
         Pageable p = PageRequest.of(pN, pS, sort);
         Page<Product> pageProducts = new PageImpl<>(user.getProfile().getWishList().getProducts().stream().toList(), p, pageable.getPageSize());
         List<Product> allProducts = pageProducts.getContent();
-        return new PageResponse(allProducts.stream().map((product) -> this.modelMapper.map(product, DisplayProductDto.class)).collect(Collectors.toList()),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            ArrayList<Images> elements = new ArrayList<>(product.getImageUrls());
+//            Images images = (Images) (product.getImageUrls().toArray())[0];
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(elements.get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
 }

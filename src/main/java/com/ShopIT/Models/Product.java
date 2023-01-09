@@ -2,7 +2,9 @@ package com.ShopIT.Models;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.SortedSet;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,7 +15,7 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long productId;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Images> imageUrls = new HashSet<>(0);
+    private Set<Images> imageUrls = new LinkedHashSet<>(0);
     private String productName;
     private double originalPrice;
     private double offerPercentage;

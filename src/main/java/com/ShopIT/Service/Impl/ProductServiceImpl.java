@@ -1,18 +1,18 @@
 package com.ShopIT.Service.Impl;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.*;
-import com.ShopIT.Payloads.ApiResponse;
+import com.ShopIT.Payloads.*;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
-import com.ShopIT.Payloads.PageResponse;
-import com.ShopIT.Payloads.PageableDto;
-import com.ShopIT.Payloads.ProductInCartDto;
 import com.ShopIT.Payloads.Products.DisplayProductDto;
 import com.ShopIT.Payloads.Products.ProductDto;
 import com.ShopIT.Payloads.Products.ProductReturnDto;
 import com.ShopIT.Repository.*;
 import com.ShopIT.Service.ProductService;
 import com.ShopIT.Service.StorageServices;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.*;
@@ -105,30 +105,33 @@ public class ProductServiceImpl implements ProductService {
         List<Product> allProducts = pageProducts.getContent();
         List<DisplayProductDto> productDTO = new ArrayList<>();
         for (Product product : allProducts) {
-            ArrayList<Images> elements = new ArrayList<>(product.getImageUrls());
-//            Images images = (Images) (product.getImageUrls().toArray())[0];
             DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
-            productDto.setImageUrls(elements.get(0));
+            productDto.setImageUrls(product.getImageUrls().get(0));
             productDTO.add(productDto);
         }
         return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
     @Override
-    public ResponseEntity<?> getProductById(Long productId){
+    public ResponseEntity<?> getProductById(Long productId) throws JsonProcessingException {
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
+        Set<Images> set = new LinkedHashSet<>(product.getImageUrls());
+        product.getImageUrls().clear();
+        product.getImageUrls().addAll(set);
         return new ResponseEntity<>(this.modelMapper.map(product, ProductReturnDto.class), OK);
     }
     @Override
-    public ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId){
+    public ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId) throws JsonProcessingException {
         Category category = this.categoryRepo.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException("Category", "CategoryID", categoryId));
         Product product = this.modelMapper.map(productDto, Product.class);
         if (FileValidation(images))
             return new ResponseEntity<>(new ApiResponse("File is not of image type(JPEG/ JPG or PNG)!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        List<Images> productImages = new ArrayList<>(0);
         Arrays.stream(images).forEach(multipartFile -> {
             Images images1 = new Images();
             images1.setImageUrl(this.storageServices.uploadFile(multipartFile));
-            product.getImageUrls().add(images1);
+            productImages.add(images1);
         });
+        product.setImageUrls(productImages);
         product.setProvider(user);
         product.getCategory().add(category);
         this.productRepo.saveAndFlush(product);
@@ -156,19 +159,26 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ResponseEntity<?> AddProductImages(User user, MultipartFile[] images, Long productId){
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
-        if (FileValidation(images))
-            return new ResponseEntity<>(new ApiResponse("File is not of image type(JPEG/ JPG or PNG)!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-        if(!Objects.equals(product.getProvider().getId(), user.getId())){
+        try {
+            if (FileValidation(images))
+                return new ResponseEntity<>(new ApiResponse("File is not of image type(JPEG/ JPG or PNG)!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        }
+        catch(Exception e){
+            return new ResponseEntity<>(new ApiResponse("Please select an image!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        }
+        if (!Objects.equals(product.getProvider().getId(), user.getId())) {
             return new ResponseEntity<>(new ApiResponse("User is not authorize to perform the required action", false), HttpStatus.FORBIDDEN);
         }
         Arrays.stream(images).forEach(multipartFile -> {
-            product.getImageUrls().add(new Images(null, this.storageServices.uploadFile(multipartFile)));
+            Images images1 = new Images();
+            images1.setImageUrl(this.storageServices.uploadFile(multipartFile));
+            product.getImageUrls().add(images1);
         });
         this.productRepo.saveAndFlush(product);
         return new ResponseEntity<>(this.modelMapper.map(product, ProductReturnDto.class), OK);
     }
 
-    private boolean FileValidation(MultipartFile[] images) {
+    private boolean FileValidation(MultipartFile[] images) throws NullPointerException{
         for (MultipartFile image : images) {
             if (!image.getContentType().equals("image/png") && !image.getContentType().equals("image/jpg") && !image.getContentType().equals("image/jpeg") && !image.getContentType().equals("image/webp")) {
                 return true;
@@ -214,10 +224,8 @@ public class ProductServiceImpl implements ProductService {
         List<Product> allProducts = pageProducts.getContent();
         List<DisplayProductDto> productDTO = new ArrayList<>();
         for (Product product : allProducts) {
-            ArrayList<Images> elements = new ArrayList<>(product.getImageUrls());
-//            Images images = (Images) (product.getImageUrls().toArray())[0];
             DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
-            productDto.setImageUrls(elements.get(0));
+            productDto.setImageUrls(product.getImageUrls().get(0));
             productDTO.add(productDto);
         }
         return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
@@ -334,10 +342,8 @@ public class ProductServiceImpl implements ProductService {
         List<Product> allProducts = pageProducts.getContent();
         List<DisplayProductDto> productDTO = new ArrayList<>();
         for (Product product : allProducts) {
-            ArrayList<Images> elements = new ArrayList<>(product.getImageUrls());
-//            Images images = (Images) (product.getImageUrls().toArray())[0];
             DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
-            productDto.setImageUrls(elements.get(0));
+            productDto.setImageUrls(product.getImageUrls().get(0));
             productDTO.add(productDto);
         }
         return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());

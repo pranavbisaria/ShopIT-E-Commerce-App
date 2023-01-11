@@ -7,6 +7,7 @@ import com.ShopIT.Payloads.Products.ProductDto;
 import com.ShopIT.Repository.ProductRepo;
 import com.ShopIT.Security.CurrentUser;
 import com.ShopIT.Service.ProductService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,7 @@ public class ProductController {
 //Add Product
     @PreAuthorize("hasAnyRole('ADMIN', 'MERCHANT')")
     @PostMapping("/add/{categoryId}")
-    public ResponseEntity<?> addProduct(@CurrentUser User user, @RequestPart("images") MultipartFile[] images, @RequestPart ProductDto productDto, @PathVariable("categoryId") Integer categoryId){
+    public ResponseEntity<?> addProduct(@CurrentUser User user, @RequestPart("images") MultipartFile[] images, @RequestPart ProductDto productDto, @PathVariable("categoryId") Integer categoryId) throws JsonProcessingException {
         return this.productService.addProduct(user, images, productDto, categoryId);
     }
     @GetMapping("/get")
@@ -40,7 +41,7 @@ public class ProductController {
         return new ResponseEntity<>(this.productService.getAllProducts(new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
     }
     @GetMapping("/get/{productId}")
-    public ResponseEntity<?> getProductById(@PathVariable("productId") Long productId){
+    public ResponseEntity<?> getProductById(@PathVariable("productId") Long productId) throws JsonProcessingException {
         return this.productService.getProductById(productId);
     }
     @PreAuthorize("hasAnyRole('ADMIN', 'MERCHANT')")

@@ -6,6 +6,7 @@ import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.ProductDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,9 +27,9 @@ public interface ProductService {
     //----------------------------------------------------------------------------PRODUCTS-------------------------------------------------------------
     PageResponse getAllProducts(PageableDto pageable);
 
-    ResponseEntity<?> getProductById(Long productId);
+    ResponseEntity<?> getProductById(Long productId) throws JsonProcessingException;
 
-    ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId);
+    ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId) throws JsonProcessingException;
 
     ResponseEntity<?> updateProduct(User user, Long productId, ProductDto productDto);
 

@@ -1,16 +1,11 @@
 package com.ShopIT.Payloads.Products;
 
 import com.ShopIT.Models.*;
-import com.ShopIT.Payloads.Categories.CategoryDTO;
-import com.ShopIT.Payloads.UserDto;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
-import static jakarta.persistence.GenerationType.UUID;
 
 @AllArgsConstructor
 @Getter@Setter
@@ -23,12 +18,12 @@ public class ProductDto {
     private double originalPrice;
     private double offerPercentage;
     private Long quantityAvailable;
-    private String offers;
+    private List<Sub> offers;
     private String warranty;
     private String Highlights;
     private String services;
-    private String specification;
+    private List<Sub> specification;
     @NotNull
-    private String description;
+    private List<Sub> description;
     private Set<QuestionModel> questions;
 }

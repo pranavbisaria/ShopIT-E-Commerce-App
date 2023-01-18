@@ -1,12 +1,12 @@
 package com.ShopIT.Service;
 
 import com.ShopIT.Models.Images;
-import com.ShopIT.Payloads.PageResponse;
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
+import com.ShopIT.Payloads.PageResponse;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.ProductDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.ShopIT.Payloads.ReviewDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,9 +27,9 @@ public interface ProductService {
     //----------------------------------------------------------------------------PRODUCTS-------------------------------------------------------------
     PageResponse getAllProducts(PageableDto pageable);
 
-    ResponseEntity<?> getProductById(Long productId) throws JsonProcessingException;
+    ResponseEntity<?> getProductById(User user, Long productId);
 
-    ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId) throws JsonProcessingException;
+    ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId);
 
     ResponseEntity<?> updateProduct(User user, Long productId, ProductDto productDto);
 
@@ -45,6 +45,8 @@ public interface ProductService {
 
     ResponseEntity<?> removeProductFromCart(User user, Long productId);
 
+    ResponseEntity<?> deleteByProductInCart(Long Id);
+
     PageResponse getAllProductsInCart(User user, PageableDto pageable);
 
     ResponseEntity<?> increaseProductQuantity(User user, Long productId);
@@ -56,4 +58,18 @@ public interface ProductService {
     ResponseEntity<?> removeFromWishlist(User user, Long productId);
 
     PageResponse getWishList(User user, PageableDto pageable);
+
+    //---------------------------------------------------------Recent Products-------------------------------------------------------------------------
+    ResponseEntity<?> getRecentProducts(User user);
+
+    // --------------------------------------------------Rating&Review--------------------------------------------------
+    ResponseEntity<?> addReview(User user, Long productId, ReviewDto reviewDto, MultipartFile[] images);
+
+    PageResponse getReviews(Long productId, PageableDto pageable);
+
+    ResponseEntity<?> getMyProductReview(User user, Long productId);
+
+    PageResponse getMyReviews(User user, PageableDto pageable);
+
+    PageResponse searchAll(String keyword, PageableDto pageable);
 }

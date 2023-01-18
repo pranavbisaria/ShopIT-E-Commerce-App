@@ -17,11 +17,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
+
 import java.util.Objects;
+import java.util.Set;
+
 import static org.springframework.http.HttpStatus.NOT_ACCEPTABLE;
 import static org.springframework.http.HttpStatus.OK;
-
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -125,7 +126,8 @@ public class UserServiceImpl implements UserService {
         Address address = this.modelMapper.map(addressDto, Address.class);
         user.getProfile().getAddress().add(address);
         this.userRepo.saveAndFlush(user);
-        return new ResponseEntity<>(user.getProfile().getAddress(), OK);
+        User updatedUser = this.userRepo.findById(user.getId()).orElseThrow(() -> new ResourceNotFoundException("User", "userId", user.getId()));
+        return new ResponseEntity<>(updatedUser.getProfile().getAddress(), OK);
     }
     @Override
     public ResponseEntity<?> updateAddress(User user, AddressDto addressDto, Long addressId){

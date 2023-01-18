@@ -3,22 +3,16 @@ package com.ShopIT.Service.Impl;
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Config.UserCache;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
-import com.ShopIT.Models.MerchantProfile;
-import com.ShopIT.Models.Profile;
-import com.ShopIT.Models.Role;
-import com.ShopIT.Models.User;
+import com.ShopIT.Models.*;
 import com.ShopIT.Payloads.*;
-import com.ShopIT.Repository.RoleRepo;
-import com.ShopIT.Repository.UserRepo;
+import com.ShopIT.Repository.*;
 import com.ShopIT.Security.JwtAuthRequest;
 import com.ShopIT.Security.JwtTokenHelper;
 import com.ShopIT.Service.AuthService;
 import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.OTPService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.twilio.rest.microvisor.v1.App;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.http.HttpStatus;
@@ -27,6 +21,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 
@@ -40,6 +35,14 @@ public class AuthServiceImpl implements AuthService {
     private final UserDetailsService userDetailsService;
     private final JwtTokenHelper jwtTokenHelper;
     private final OTPService otpService;
+    private final ProfileRepo profileRepo;
+    private final MerchantProfileRepo merchantProfileRepo;
+    private final WishListRepo wishListRepo;
+    private final CartRepo cartRepo;
+    private final RecentProductRepo recentProductRepo;
+    private final ReviewRepo reviewRepo;
+    private final MyOrdersRepo myOrdersRepo;
+
     @Override
     public ResponseEntity<?> LoginAPI(JwtAuthRequest request) {
         request.setEmail(request.getEmail().trim().toLowerCase());
@@ -68,22 +71,22 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<?> registerEmail(EmailDto emailDto, String type) throws Exception {
         String email = emailDto.getEmail().trim().toLowerCase();
-        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
         if (type.equals("merchant")) {
-            newRole = this.roleRepo.findById(1003).get();
+            newRole = this.roleRepo.findById(1003).orElse(null);
             if (this.emailExists(email)) {
                 User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-                if (user.getRoles().contains(newRole)) {
+                if (user.getRoles().contains(newRole) || user.getRoles().contains(this.roleRepo.findById(1001).orElse(null))) {
                     return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
                 }
-                newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+                newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
             }
         } else if (this.emailExists(email)) {
             User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-            if (user.getRoles().contains(newRole)) {
+            if (user.getRoles().contains(newRole) || user.getRoles().contains(this.roleRepo.findById(1001).orElse(null))) {
                 return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
             }
-            newRole = (Role)this.roleRepo.findById(1003).get();
+            newRole = (Role)this.roleRepo.findById(1003).orElse(null);
         }
         try {
             if (this.userCache.isCachePresent(email)) {
@@ -116,9 +119,9 @@ public class AuthServiceImpl implements AuthService {
         userDto.setFirstname(userDto.getFirstname().trim());
         userDto.setLastname(userDto.getLastname().trim());
         String email = userDto.getEmail().trim().toLowerCase();
-        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
         if (type.equals("merchant")) {
-            newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
+            newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).orElse(null);
         }
         if (this.emailExists(email)) {
             User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
@@ -145,11 +148,28 @@ public class AuthServiceImpl implements AuthService {
                 }
                 if (type.equals("merchant")) {
                     MerchantProfile merchantProfile = new MerchantProfile();
+                    merchantProfile.setUser(user);
+                    this.merchantProfileRepo.save(merchantProfile);
                     user.setMerchantProfile(merchantProfile);
                 }
                 else{
                     Profile profile = new Profile();
+                    profile.setUser(user);
+                    this.profileRepo.save(profile);
+
                     user.setProfile(profile);
+                    
+                    Cart cart = new Cart();
+                    cart.setProfile(profile);
+                    this.cartRepo.save(cart);
+                    
+                    WishList wishList = new WishList();
+                    wishList.setProfile(profile);
+                    this.wishListRepo.save(wishList);
+                    
+                    RecentProduct recentProduct = new RecentProduct();
+                    recentProduct.setProfile(profile);
+                    this.recentProductRepo.save(recentProduct);
                 }
                 user.getRoles().add(newRole);
                 user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
@@ -162,7 +182,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
     @Override
-    public ResponseEntity<?> signGoogle(String Token) throws JsonProcessingException, NullPointerException {
+    public ResponseEntity<?> signGoogle(String Token) throws NullPointerException {
         Token = new String(Base64.decodeBase64(Token.split("\\.")[1]), StandardCharsets.UTF_8);
         ObjectMapper mapper = (new ObjectMapper()).configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         GoogleSignModel payload = null;
@@ -174,7 +194,7 @@ public class AuthServiceImpl implements AuthService {
                     String email = payload.email();
                     User user;
                     if (this.emailExists(email)) {
-                        user = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
+                        user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
                         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
                         String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
                         String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
@@ -186,7 +206,7 @@ public class AuthServiceImpl implements AuthService {
                         user.setLastname(payload.family_name());
                         user.setPassword("Google");
                         user.setProfilePhoto(payload.picture());
-                        Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
+                        Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
                         user.getRoles().add(role);
                         this.userRepo.save(user);
                         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
@@ -201,7 +221,7 @@ public class AuthServiceImpl implements AuthService {
             } else {
                 return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.BAD_REQUEST);
             }
-        } catch (NullPointerException | JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.FORBIDDEN);
         }
@@ -209,7 +229,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<?> verifyOTPPasswordChange(OtpDto otpDto) throws ExecutionException {
         String email = otpDto.getEmail().trim().toLowerCase();
-        User userOTP = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
+        User userOTP = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
         if (!userOTP.isEnabled() || userOTP.getPassword()==null) {
             if (!this.userCache.isCachePresent(email)) {
                 return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);

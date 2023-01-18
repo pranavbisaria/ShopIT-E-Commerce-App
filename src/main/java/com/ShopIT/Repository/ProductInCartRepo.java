@@ -14,4 +14,5 @@ import java.util.Optional;
 public interface ProductInCartRepo extends JpaRepository<ProductInCart, Long> {
     Optional<ProductInCart> findByProductAndUser(Product product, User user);
     Page<ProductInCart> findByUser(User user, Pageable pageable);
+    Boolean existsByProductAndUser(Product product, User user);
 }

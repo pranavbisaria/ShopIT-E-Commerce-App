@@ -5,9 +5,9 @@ import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.*;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.CurrentUser;
+import com.ShopIT.Service.ProductService;
 import com.ShopIT.Service.StorageServices;
 import com.ShopIT.Service.UserService;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -17,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import static org.springframework.http.HttpStatus.OK;
 
@@ -30,6 +29,7 @@ public class UserProfileController {
     private final StorageServices storageServices;
     private final UserService userService;
     private final ModelMapper modelMapper;
+    private final ProductService productService;
     @PutMapping("/updateProfile")
     public ResponseEntity<?> updateUserProfileProfile(@CurrentUser User user, @Valid @RequestBody UserProfile userProfile){
         return this.userService.updateUserProfile(user, userProfile);
@@ -87,4 +87,12 @@ public class UserProfileController {
     public ResponseEntity<?> removeAddress(@CurrentUser User user, @PathVariable("addressId") Long addressId) {
         return this.userService.removeAddress(user, addressId);
     }
+
+// -----------------------------------------Recent Products --------------------------------------------------------------
+    @PreAuthorize("hasAnyRole('ADMIN', 'NORMAL')")
+    @GetMapping("/getSuggestion")
+    public ResponseEntity<?> getRecentProduct(@CurrentUser User user){
+        return this.productService.getRecentProducts(user);
+    }
+
 }

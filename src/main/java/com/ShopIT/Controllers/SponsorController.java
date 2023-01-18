@@ -3,11 +3,8 @@ package com.ShopIT.Controllers;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.Images;
 import com.ShopIT.Models.Sponsor;
-import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.ApiResponse;
-import com.ShopIT.Payloads.Products.ProductDto;
 import com.ShopIT.Repository.SponsorRepo;
-import com.ShopIT.Security.CurrentUser;
 import com.ShopIT.Service.StorageServices;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -16,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.Arrays;
 import java.util.List;
 @RestController

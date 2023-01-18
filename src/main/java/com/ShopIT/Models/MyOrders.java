@@ -9,7 +9,6 @@ import lombok.Setter;
 
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -37,4 +36,6 @@ public class MyOrders {
     private String currency;
     private String paymentId;
     private String status;
+    @ManyToOne(cascade = CascadeType.ALL)
+    private Profile profiles;
 }

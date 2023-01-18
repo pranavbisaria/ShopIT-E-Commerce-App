@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,9 +33,9 @@ public class User implements UserDetails {
     private String phoneNumber;
     @Column(length = 1000)
     private String profilePhoto;
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Profile profile = null;
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private MerchantProfile merchantProfile = null;
     private Boolean active = true;
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)

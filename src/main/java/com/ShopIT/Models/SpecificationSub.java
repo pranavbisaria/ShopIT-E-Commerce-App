@@ -6,17 +6,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.List;
-
-@AllArgsConstructor
+@Entity
 @NoArgsConstructor
 @Getter@Setter
-@Entity
-public class Sponsor {
+@AllArgsConstructor
+public class SpecificationSub {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer Id;
+    private Long id;
+    @Column(length = 10000)
+    private String head;
+    @Column(length = 10000)
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Images> images = new ArrayList<>(0);
+    private List<Sub> body;
 }

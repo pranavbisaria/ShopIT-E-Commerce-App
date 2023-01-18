@@ -19,7 +19,7 @@ public class Address {
     private String type;
     private String name;
     private String mobile;
-    private int pincode;
+    private String pincode;
     private String locality;
     private String addressLine;
     private String city;

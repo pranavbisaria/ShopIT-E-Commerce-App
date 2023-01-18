@@ -25,6 +25,6 @@ public class MerchantProfile {
     private Set<MyOrders> paymentsReceived = new HashSet<>(0);
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<Product> products = new HashSet<>(0);
-//    @ManyToMany
-//    private Set<Notification> notifications;
+    @OneToOne(mappedBy = "merchantProfile", optional = false)
+    private User user;
 }

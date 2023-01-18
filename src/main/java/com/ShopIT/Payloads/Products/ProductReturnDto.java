@@ -1,10 +1,15 @@
 package com.ShopIT.Payloads.Products;
-import com.ShopIT.Models.*;
+
+import com.ShopIT.Models.Category;
+import com.ShopIT.Models.Images;
+import com.ShopIT.Models.SpecificationSub;
+import com.ShopIT.Models.Sub;
 import com.ShopIT.Payloads.UserShow;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,19 +25,16 @@ public class ProductReturnDto {
     @NotEmpty
     private double originalPrice;
     private double offerPercentage;
-    private Integer rating;
+    private float rating;
     private Long quantityAvailable;
     private String warranty;
     private List<Sub> offers;
     private String Highlights;
     private String services;
-    private List<Sub> specification;
+    private List<SpecificationSub> specification;
     @NotEmpty
     private List<Sub> description;
-    private String ratingAndReviews;
     private Long NoOfOrders;
-    private Set<QuestionModel> questions;
-    private List<Review> reviews;
     private Set<Category> category = new HashSet<>();
     private UserShow provider;
 }

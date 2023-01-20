@@ -1,15 +1,12 @@
 package com.ShopIT.Payloads.Products;
-
-import com.ShopIT.Models.Category;
-import com.ShopIT.Models.Images;
-import com.ShopIT.Models.SpecificationSub;
-import com.ShopIT.Models.Sub;
+import com.ShopIT.Models.*;
 import com.ShopIT.Payloads.UserShow;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

@@ -2,6 +2,7 @@ package com.ShopIT.Models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.Setter;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -25,7 +27,6 @@ public class Review {
     @Column(length = 10000)
     private String description;
     private Date issueTime;
-//    @JsonIgnore
     @ManyToOne(cascade = CascadeType.ALL)
     private Profile profiles;
     @ManyToOne

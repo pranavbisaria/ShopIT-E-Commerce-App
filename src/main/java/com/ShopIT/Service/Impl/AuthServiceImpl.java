@@ -11,8 +11,14 @@ import com.ShopIT.Security.JwtTokenHelper;
 import com.ShopIT.Service.AuthService;
 import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.OTPService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.twilio.rest.microvisor.v1.App;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.http.HttpStatus;
@@ -21,8 +27,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 @Service @RequiredArgsConstructor
@@ -149,7 +156,8 @@ public class AuthServiceImpl implements AuthService {
                 if (type.equals("merchant")) {
                     MerchantProfile merchantProfile = new MerchantProfile();
                     merchantProfile.setUser(user);
-                    this.merchantProfileRepo.save(merchantProfile);
+                    this.merchantProfileRepo.saveAndFlush(merchantProfile);
+
                     user.setMerchantProfile(merchantProfile);
                 }
                 else{

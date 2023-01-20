@@ -1,12 +1,13 @@
 package com.ShopIT.Service;
 
 import com.ShopIT.Models.Images;
+import com.ShopIT.Payloads.PageResponse;
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
-import com.ShopIT.Payloads.PageResponse;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.ProductDto;
 import com.ShopIT.Payloads.ReviewDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,7 +46,9 @@ public interface ProductService {
 
     ResponseEntity<?> removeProductFromCart(User user, Long productId);
 
-    ResponseEntity<?> deleteByProductInCart(Long Id);
+    ResponseEntity<?> deleteByProductInCart(User user, Long Id);
+
+    ResponseEntity<?> emptyMyCart(User user);
 
     PageResponse getAllProductsInCart(User user, PageableDto pageable);
 

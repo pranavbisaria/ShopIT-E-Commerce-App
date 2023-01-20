@@ -269,9 +269,17 @@ public class ProductServiceImpl implements ProductService {
         return new ResponseEntity<>(new ApiResponse("Product has been successfully deleted from the cart", true), HttpStatus.OK);
     }
     @Override
-    public ResponseEntity<?> deleteByProductInCart(Long Id){
-        this.productInCartRepo.deleteById(Id);
+    public ResponseEntity<?> deleteByProductInCart(User user, Long Id){
+        this.productInCartRepo.deleteByIdAndUser(Id, user);
         return new ResponseEntity<>(new ApiResponse("Product has been successfully deleted from the cart", true), HttpStatus.OK);
+    }
+    @Override
+    public ResponseEntity<?> emptyMyCart(User user){
+        List<ProductInCart> product = this.productInCartRepo.findByUser(user);
+        product.forEach((productInCart -> {
+            this.productInCartRepo.deleteById(productInCart.getId());
+        }));
+        return new ResponseEntity<>(new ApiResponse("All products have been successfully deleted from the cart", true), HttpStatus.OK);
     }
     @Override
     public PageResponse getAllProductsInCart(User user, PageableDto pageable){
@@ -309,7 +317,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
         ProductInCart productInCart = this.productInCartRepo.findByProductAndUser(product, user).orElseThrow(()-> new ResourceNotFoundException("Product", "productId", productId));
         if((productInCart.getNoOfProducts()-1L) <= 0L){
-           return deleteByProductInCart(productInCart.getId());
+           return deleteByProductInCart(user, productInCart.getId());
         }
         productInCart.setNoOfProducts(productInCart.getNoOfProducts() - 1L);
         return new ResponseEntity<>(new ApiResponse("Product quantity has been successfully decreased", true), HttpStatus.OK);

@@ -1,7 +1,12 @@
 package com.ShopIT.Payloads;
 
 import com.ShopIT.Models.Images;
+import com.ShopIT.Models.User;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;

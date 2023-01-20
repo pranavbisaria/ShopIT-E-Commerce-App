@@ -1,14 +1,10 @@
 package com.ShopIT.Payloads.Products;
 
-import com.ShopIT.Models.QuestionModel;
-import com.ShopIT.Models.SpecificationSub;
-import com.ShopIT.Models.Sub;
+import com.ShopIT.Models.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 

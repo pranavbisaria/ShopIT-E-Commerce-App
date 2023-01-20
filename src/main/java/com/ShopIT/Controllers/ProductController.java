@@ -1,7 +1,5 @@
 package com.ShopIT.Controllers;
-
-import com.ShopIT.Models.Images;
-import com.ShopIT.Models.User;
+import com.ShopIT.Models.*;
 import com.ShopIT.Payloads.ApiResponse;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.ProductDto;
@@ -16,9 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
-
 import static org.springframework.http.HttpStatus.OK;
 
 @RestController
@@ -94,8 +90,12 @@ public class ProductController {
         }
     }
     @DeleteMapping("/remove/productInCart/{id}")
-    public ResponseEntity<?> deleteTheProductInCart(@PathVariable Long id){
-        return this.productService.deleteByProductInCart(id);
+    public ResponseEntity<?> deleteTheProductInCart(@CurrentUser User user, @PathVariable Long id){
+        return this.productService.deleteByProductInCart(user, id);
+    }
+    @DeleteMapping("/remove/emptyMyCart")
+    public ResponseEntity<?> deleteTheProductInCart(@CurrentUser User user){
+        return this.productService.emptyMyCart(user);
     }
     @PreAuthorize("hasAnyRole('ADMIN', 'NORMAL')")
     @GetMapping("/cart/get")

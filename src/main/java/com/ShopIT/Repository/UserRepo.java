@@ -2,6 +2,7 @@ package com.ShopIT.Repository;
 
 import com.ShopIT.Models.Profile;
 import com.ShopIT.Models.User;
+import com.ShopIT.Payloads.UserShow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

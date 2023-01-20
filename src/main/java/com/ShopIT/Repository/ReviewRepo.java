@@ -3,6 +3,7 @@ package com.ShopIT.Repository;
 import com.ShopIT.Models.Product;
 import com.ShopIT.Models.Profile;
 import com.ShopIT.Models.Review;
+import com.ShopIT.Models.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

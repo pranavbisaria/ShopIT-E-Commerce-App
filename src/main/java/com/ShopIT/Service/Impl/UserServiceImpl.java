@@ -3,9 +3,11 @@ package com.ShopIT.Service.Impl;
 import com.ShopIT.Config.UserCache;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.Address;
+import com.ShopIT.Models.Profile;
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.*;
 import com.ShopIT.Repository.AddressRepo;
+import com.ShopIT.Repository.ProfileRepo;
 import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.JwtTokenHelper;
 import com.ShopIT.Service.OTPService;
@@ -17,12 +19,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
-
 import java.util.Objects;
-import java.util.Set;
-
 import static org.springframework.http.HttpStatus.NOT_ACCEPTABLE;
 import static org.springframework.http.HttpStatus.OK;
+
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +35,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepo userRepo;
     private final UserDetailsService userDetailsService;
     private final AddressRepo addressRepo;
+    private final ProfileRepo profileRepo;
     @Override
     public ResponseEntity<?> updateUserProfile(User user, UserProfile userProfile) {
         if (userProfile.getGender().equals("f")) {
@@ -118,21 +120,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<?> getAllAddress(User user){
-        Set<Address> addresses = user.getProfile().getAddress();
+        Profile profile = this.profileRepo.findByUser(user);
+        Set<Address> addresses = profile.getAddress();
         return new ResponseEntity<>(addresses, OK);
     }
     @Override
     public ResponseEntity<?> addAddress(User user, AddressDto addressDto){
+        Profile profile = this.profileRepo.findByUser(user);
         Address address = this.modelMapper.map(addressDto, Address.class);
-        user.getProfile().getAddress().add(address);
-        this.userRepo.saveAndFlush(user);
-        User updatedUser = this.userRepo.findById(user.getId()).orElseThrow(() -> new ResourceNotFoundException("User", "userId", user.getId()));
-        return new ResponseEntity<>(updatedUser.getProfile().getAddress(), OK);
+        profile.getAddress().add(address);
+        this.profileRepo.save(profile);
+        Profile updatedProfile = this.profileRepo.findByUser(user);
+        return new ResponseEntity<>(updatedProfile.getAddress(), OK);
     }
     @Override
     public ResponseEntity<?> updateAddress(User user, AddressDto addressDto, Long addressId){
         Address address = this.addressRepo.findById(addressId).orElseThrow(()-> new ResourceNotFoundException("Address", "addressId", addressId));
-        if(!user.getProfile().getAddress().contains(address)){
+        Profile profile = this.profileRepo.findByUser(user);
+        if(!profile.getAddress().contains(address)){
             return new ResponseEntity<>(new ApiResponse("User not authorize to perform the action", false), HttpStatus.FORBIDDEN);
         }
         address.setType(addressDto.getType());
@@ -146,15 +151,17 @@ public class UserServiceImpl implements UserService {
         address.setLandmark(addressDto.getLandmark());
         address.setMobile_alternative(addressDto.getMobile_alternative());
         this.addressRepo.saveAndFlush(address);
-        return new ResponseEntity<>(user.getProfile().getAddress(), OK);
+        Profile updatedProfile = this.profileRepo.findByUser(user);
+        return new ResponseEntity<>(updatedProfile.getAddress(), OK);
     }
     @Override
     public ResponseEntity<?> removeAddress(User user, Long addressId){
         Address address = this.addressRepo.findById(addressId).orElseThrow(()-> new ResourceNotFoundException("Address", "addressId", addressId));
-        if(!user.getProfile().getAddress().contains(address)){
+        Profile profile = this.profileRepo.findByUser(user);
+        if(!profile.getAddress().contains(address)){
             return new ResponseEntity<>(new ApiResponse("User not authorize to perform the action", false), HttpStatus.FORBIDDEN);
         }
-        user.getProfile().getAddress().remove(address);
+        profile.getAddress().remove(address);
         this.userRepo.save(user);
         this.addressRepo.delete(address);
         return new ResponseEntity<>(new ApiResponse("Address has been successfully deleted", true), OK);

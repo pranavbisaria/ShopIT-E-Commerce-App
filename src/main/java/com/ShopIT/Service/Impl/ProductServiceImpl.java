@@ -1,11 +1,8 @@
 package com.ShopIT.Service.Impl;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.*;
-import com.ShopIT.Payloads.ApiResponse;
+import com.ShopIT.Payloads.*;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
-import com.ShopIT.Payloads.PageResponse;
-import com.ShopIT.Payloads.PageableDto;
-import com.ShopIT.Payloads.ProductInCartDto;
 import com.ShopIT.Payloads.Products.DisplayProductDto;
 import com.ShopIT.Payloads.Products.ProductDto;
 import com.ShopIT.Payloads.Products.ProductReturnDto;
@@ -39,6 +36,9 @@ public class ProductServiceImpl implements ProductService {
     private final WishListRepo wishListRepo;
     private final CartRepo cartRepo;
     private final ProductInCartRepo productInCartRepo;
+    private final RecentProductRepo recentProductRepo;
+    private final ProfileRepo profileRepo;
+    private final ReviewRepo reviewRepo;
     @Override
     public ResponseEntity<?> addCategory(String CategoryName, MultipartFile photo) {
         Category category = new Category();
@@ -103,24 +103,48 @@ public class ProductServiceImpl implements ProductService {
         Pageable p = PageRequest.of(pN, pS, sort);
         Page<Product> pageProducts = this.productRepo.findAll(p);
         List<Product> allProducts = pageProducts.getContent();
-        return new PageResponse(allProducts.stream().map((categories) -> this.modelMapper.map(categories, DisplayProductDto.class)).collect(Collectors.toList()),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(product.getImageUrls().get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
     @Override
-    public ResponseEntity<?> getProductById(Long productId){
+    public ResponseEntity<?> getProductById(User user, Long productId) {
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
-        return new ResponseEntity<>(this.modelMapper.map(product, ProductReturnDto.class), OK);
+        ProductReturnDto productReturnDto = new ProductReturnDto();
+        productReturnDto = this.modelMapper.map(product, ProductReturnDto.class);
+        if(user != null) {
+            Profile profile = this.profileRepo.findByUser(user);
+            RecentProduct recent = this.recentProductRepo.findByProfile(profile);
+            recent.getProducts().remove(product);
+            int n = recent.getProducts().size();
+            if (n >= 10) {
+                recent.setProducts(new ArrayList<>(recent.getProducts().subList(0, 8)));
+            }
+            recent.getProducts().add(0, product);
+            WishList wishList = this.wishListRepo.findByProfile(profile);
+            if(wishList.getProducts().contains(product)){
+                productReturnDto.setAvailInWishlist(true);
+            }
+        }
+        return new ResponseEntity<>(productReturnDto, OK);
     }
     @Override
-    public ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId){
+    public ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId) {
         Category category = this.categoryRepo.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException("Category", "CategoryID", categoryId));
         Product product = this.modelMapper.map(productDto, Product.class);
         if (FileValidation(images))
             return new ResponseEntity<>(new ApiResponse("File is not of image type(JPEG/ JPG or PNG)!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        List<Images> productImages = new ArrayList<>(0);
         Arrays.stream(images).forEach(multipartFile -> {
             Images images1 = new Images();
             images1.setImageUrl(this.storageServices.uploadFile(multipartFile));
-            product.getImageUrls().add(images1);
+            productImages.add(images1);
         });
+        product.setImageUrls(productImages);
         product.setProvider(user);
         product.getCategory().add(category);
         this.productRepo.saveAndFlush(product);
@@ -148,19 +172,26 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ResponseEntity<?> AddProductImages(User user, MultipartFile[] images, Long productId){
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
-        if (FileValidation(images))
-            return new ResponseEntity<>(new ApiResponse("File is not of image type(JPEG/ JPG or PNG)!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-        if(!Objects.equals(product.getProvider().getId(), user.getId())){
+        try {
+            if (FileValidation(images))
+                return new ResponseEntity<>(new ApiResponse("File is not of image type(JPEG/ JPG or PNG)!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        }
+        catch(Exception e){
+            return new ResponseEntity<>(new ApiResponse("Please select an image!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        }
+        if (!Objects.equals(product.getProvider().getId(), user.getId())) {
             return new ResponseEntity<>(new ApiResponse("User is not authorize to perform the required action", false), HttpStatus.FORBIDDEN);
         }
         Arrays.stream(images).forEach(multipartFile -> {
-            product.getImageUrls().add(new Images(null, this.storageServices.uploadFile(multipartFile)));
+            Images images1 = new Images();
+            images1.setImageUrl(this.storageServices.uploadFile(multipartFile));
+            product.getImageUrls().add(images1);
         });
         this.productRepo.saveAndFlush(product);
         return new ResponseEntity<>(this.modelMapper.map(product, ProductReturnDto.class), OK);
     }
 
-    private boolean FileValidation(MultipartFile[] images) {
+    private boolean FileValidation(MultipartFile[] images) throws NullPointerException{
         for (MultipartFile image : images) {
             if (!image.getContentType().equals("image/png") && !image.getContentType().equals("image/jpg") && !image.getContentType().equals("image/jpeg") && !image.getContentType().equals("image/webp")) {
                 return true;
@@ -204,17 +235,31 @@ public class ProductServiceImpl implements ProductService {
         Pageable p = PageRequest.of(pN, pS, sort);
         Page<Product> pageProducts = this.productRepo.findByCategoryContaining(category, p);
         List<Product> allProducts = pageProducts.getContent();
-        return new PageResponse(allProducts.stream().map((categories) -> this.modelMapper.map(categories, DisplayProductDto.class)).collect(Collectors.toList()),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(product.getImageUrls().get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
 
 //----------------------------------------------------------CART--------------------------------------------------------------------------------
 
     @Override
-    public ResponseEntity<?> addProductToCart(User user, Long productId){
-        Cart cart = user.getProfile().getCart();
+    public ResponseEntity<?> addProductToCart(User user, Long productId, Long n){
+        Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: " + productId, 0));
+        if(this.productInCartRepo.existsByProductAndUser(product, user)){
+            return new ResponseEntity<>(new ApiResponse("Product already exist in the cart", true), HttpStatus.CONFLICT);
+        }
+        if(n >= product.getQuantityAllowedPerUser()){
+            return  new ResponseEntity<>(new ApiResponse("Product has reached its maximum quantity", false), HttpStatus.METHOD_NOT_ALLOWED);
+        }
+        Profile profile = this.profileRepo.findByUser(user);
+        Cart cart = this.cartRepo.findByProfile(profile);
         ProductInCart productInCart = new ProductInCart();
-        productInCart.setProduct(this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0)));
-        productInCart.setNoOfProducts(1L);
+        productInCart.setProduct(product);
+        productInCart.setNoOfProducts(n);
         productInCart.setDateOfOrder(new Date(System.currentTimeMillis()));
         productInCart.setUser(user);
         cart.getCartProducts().add(productInCart);
@@ -224,12 +269,26 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ResponseEntity<?> removeProductFromCart(User user, Long productId){
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
-        Cart cart = user.getProfile().getCart();
+        Profile profile = this.profileRepo.findByUser(user);
+        Cart cart = this.cartRepo.findByProfile(profile);
         ProductInCart productInCart = this.productInCartRepo.findByProductAndUser(product, user).orElseThrow(()-> new ResourceNotFoundException("Product", "productId", productId));
         cart.getCartProducts().remove(productInCart);
         this.productInCartRepo.delete(productInCart);
         this.cartRepo.save(cart);
         return new ResponseEntity<>(new ApiResponse("Product has been successfully deleted from the cart", true), HttpStatus.OK);
+    }
+    @Override
+    public ResponseEntity<?> deleteByProductInCart(User user, Long Id){
+        this.productInCartRepo.deleteByIdAndUser(Id, user);
+        return new ResponseEntity<>(new ApiResponse("Product has been successfully deleted from the cart", true), HttpStatus.OK);
+    }
+    @Override
+    public ResponseEntity<?> emptyMyCart(User user){
+        List<ProductInCart> product = this.productInCartRepo.findByUser(user);
+        product.forEach((productInCart -> {
+            this.productInCartRepo.deleteById(productInCart.getId());
+        }));
+        return new ResponseEntity<>(new ApiResponse("All products have been successfully deleted from the cart", true), HttpStatus.OK);
     }
     @Override
     public PageResponse getAllProductsInCart(User user, PageableDto pageable){
@@ -244,28 +303,34 @@ public class ProductServiceImpl implements ProductService {
         Pageable p = PageRequest.of(pN, pS, sort);
         Page<ProductInCart> pageProducts = this.productInCartRepo.findByUser(user, p);
         List<ProductInCart> allProducts = pageProducts.getContent();
-        return new PageResponse(allProducts.stream().map((product) -> this.modelMapper.map(product, ProductInCartDto.class)).collect(Collectors.toList()),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+        List<ProductInCartDto> productDTO = new ArrayList<>();
+        for (ProductInCart product : allProducts) {
+            ProductInCartDto productDto = this.modelMapper.map(product, ProductInCartDto.class);
+            productDto.getProduct().setImageUrls(product.getProduct().getImageUrls().get(0));
+            productDto.setAvailable(product.getProduct().getQuantityAvailable() >= product.getNoOfProducts());
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO), pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
     @Override
     public ResponseEntity<?> increaseProductQuantity(User user, Long productId){
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
         ProductInCart productInCart = this.productInCartRepo.findByProductAndUser(product, user).orElseThrow(()-> new ResourceNotFoundException("Product", "productId", productId));
         if(productInCart.getNoOfProducts() >= product.getQuantityAllowedPerUser()){
-            return  new ResponseEntity<>(new ApiResponse("Not allowed to increase the quantity of purchase", false), HttpStatus.METHOD_NOT_ALLOWED);
+            return  new ResponseEntity<>(new ApiResponse("Product has reached its maximum quantity", false), HttpStatus.METHOD_NOT_ALLOWED);
         }
         productInCart.setNoOfProducts(productInCart.getNoOfProducts() +1L);
-        return new ResponseEntity<>(this.modelMapper.map(productInCart, ProductInCartDto.class), HttpStatus.OK);
+        return new ResponseEntity<>(new ApiResponse("Product quantity has been successfully increased", true), HttpStatus.OK);
     }
     @Override
     public ResponseEntity<?> decreaseProductQuantity(User user, Long productId){
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
         ProductInCart productInCart = this.productInCartRepo.findByProductAndUser(product, user).orElseThrow(()-> new ResourceNotFoundException("Product", "productId", productId));
-        productInCart.setNoOfProducts(productInCart.getNoOfProducts() - 1L);
-        if(productInCart.getNoOfProducts() <= 0L){
-            this.productInCartRepo.delete(productInCart);
-            return  new ResponseEntity<>(new ApiResponse("Not allowed to increase the quantity of purchase", false), HttpStatus.METHOD_NOT_ALLOWED);
+        if((productInCart.getNoOfProducts()-1L) <= 0L){
+           return deleteByProductInCart(user, productInCart.getId());
         }
-        return new ResponseEntity<>(this.modelMapper.map(productInCart, ProductInCartDto.class), HttpStatus.OK);
+        productInCart.setNoOfProducts(productInCart.getNoOfProducts() - 1L);
+        return new ResponseEntity<>(new ApiResponse("Product quantity has been successfully decreased", true), HttpStatus.OK);
     }
 
 //------------------------------------------------------------------WishList-------------------------------------------------------
@@ -273,35 +338,25 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ResponseEntity<?> addToWishlist(User user, Long productId){
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
-        WishList wishList = user.getProfile().getWishList();
-        if(wishList == null){
-            wishList = new WishList();
-            user.getProfile().setWishList(wishList);
-            this.userRepo.save(user);
-        }
+        Profile profile = this.profileRepo.findByUser(user);
+        WishList wishList = this.wishListRepo.findByProfile(profile);
         if(wishList.getProducts().contains(product)){
-            return new ResponseEntity<>(new ApiResponse("Product already present in your wishlist", false), HttpStatus.BAD_REQUEST);
+            wishList.getProducts().remove(product);
+            return new ResponseEntity<>(new ApiResponse("Product removed from WishList", true), HttpStatus.OK);
         }
-        wishList.getProducts().remove(product);
-        this.wishListRepo.save(wishList);
-        return new ResponseEntity<>(new ApiResponse("Product Added To Cart", true), HttpStatus.OK);
+        wishList.getProducts().add(product);
+        return new ResponseEntity<>(new ApiResponse("Product Added To WishList", true), HttpStatus.OK);
     }
     @Override
     public ResponseEntity<?> removeFromWishlist(User user, Long productId){
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
-        WishList wishList = user.getProfile().getWishList();
-        if(wishList == null){
-            wishList = new WishList();
-            user.getProfile().setWishList(wishList);
-            this.userRepo.save(user);
-            return new ResponseEntity<>(new ApiResponse("Your WishList is Empty!!!", false), HttpStatus.NO_CONTENT);
-        }
+        Profile profile = this.profileRepo.findByUser(user);
+        WishList wishList = this.wishListRepo.findByProfile(profile);
         if(!wishList.getProducts().contains(product)){
             return new ResponseEntity<>(new ApiResponse("No product found in your Wishlist!!", false), HttpStatus.NOT_FOUND);
         }
         wishList.getProducts().remove(product);
-        this.wishListRepo.save(wishList);
-        return new ResponseEntity<>(new ApiResponse("Product Added To Cart", true), HttpStatus.OK);
+        return new ResponseEntity<>(new ApiResponse("Product removed from WishList", true), HttpStatus.OK);
     }
     @Override
     public PageResponse getWishList(User user, PageableDto pageable){
@@ -314,8 +369,144 @@ public class ProductServiceImpl implements ProductService {
             sort = Sort.by(pageable.getSortBy()).descending();
         }
         Pageable p = PageRequest.of(pN, pS, sort);
-        Page<Product> pageProducts = new PageImpl<>(user.getProfile().getWishList().getProducts().stream().toList(), p, pageable.getPageSize());
+        Profile profile = this.profileRepo.findByUser(user);
+        WishList wishList = this.wishListRepo.findByProfile(profile);
+        Page<Product> pageProducts = new PageImpl<>(wishList.getProducts().stream().toList(), p, pageable.getPageSize());
         List<Product> allProducts = pageProducts.getContent();
-        return new PageResponse(allProducts.stream().map((product) -> this.modelMapper.map(product, DisplayProductDto.class)).collect(Collectors.toList()),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(product.getImageUrls().get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+    }
+
+//---------------------------------------------------------Recent Products-------------------------------------------------------------------------
+    @Transactional
+    @Override
+    public ResponseEntity<?> getRecentProducts(User user){
+        Profile profile = this.profileRepo.findByUser(user);
+        RecentProduct recentProduct = this.recentProductRepo.findByProfile(profile);
+//        Set<Product> set = new LinkedHashSet<>(recentProduct.getProducts());
+//        recentProduct.getProducts().clear();
+//        recentProduct.getProducts().addAll(set);
+        RecentProductDto recent = new RecentProductDto(recentProduct.getId(), new ArrayList<>());
+        for(Product product : recentProduct.getProducts()) {
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(product.getImageUrls().get(0));
+            recent.getProducts().add(productDto);
+        }
+        return new ResponseEntity<>(recent, OK);
+    }
+// --------------------------------------------------Rating&Review--------------------------------------------------
+    @Override
+    public ResponseEntity<?> addReview(User user, Long productId, ReviewDto reviewDto, MultipartFile[] images){
+        Profile profile = this.profileRepo.findByUser(user);
+        Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
+        if(this.reviewRepo.existsByProfilesAndProduct(profile, product)){
+            return new ResponseEntity<>(new ApiResponse("User review already exist!!", false), HttpStatus.CONFLICT);
+        }
+        long noOfRating = this.reviewRepo.countByProduct(product);
+        //formula used ==>        ((Overall Rating * Total Rating) + new Rating) / (Total Rating + 1)
+        float newRating = (((product.getRating() * noOfRating) + Integer.parseInt(reviewDto.getRating()))/ (noOfRating + 1f));
+        product.setRating(newRating);
+        this.productRepo.save(product);
+        Review review = this.modelMapper.map(reviewDto, Review.class);
+        if(!Objects.isNull(images)){
+            Arrays.stream(images).forEach(multipartFile -> {
+                Images rImages = new Images();
+                rImages.setImageUrl(this.storageServices.uploadFile(multipartFile));
+                review.getImages().add(rImages);
+            });
+        }
+        review.setProfiles(profile);
+        review.setProduct(product);
+        review.setIssueTime(new Date(System.currentTimeMillis()));
+        this.reviewRepo.save(review);
+        reviewDto.setId(review.getId());
+        reviewDto.setUser(this.modelMapper.map(user, UserShow.class));
+        reviewDto.setIssueTime(review.getIssueTime());
+        return new ResponseEntity<>(reviewDto, HttpStatus.OK);
+    }
+    @Override
+    public PageResponse getReviews(Long productId, PageableDto pageable){
+        Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
+        Sort sort = null;
+        if(pageable.getSortDir().equalsIgnoreCase("asc")){
+            sort = Sort.by(pageable.getSortBy()).ascending();
+        }
+        else{
+            sort = Sort.by(pageable.getSortBy()).descending();
+        }
+        Pageable p = PageRequest.of(pN, pS, sort);
+        Product product = this.productRepo.findById(productId).orElseThrow(()-> new ResourceNotFoundException("Product", "productId", productId));
+        Page<Review> pageReview = this.reviewRepo.findAllByProduct(product, p);
+        List<Review> productReview = pageReview.getContent();
+        List<ReviewDto> reviewDTOs = new ArrayList<>();
+        productReview.forEach((ReviewProd)-> {
+            ReviewDto reviewDto = this.modelMapper.map(ReviewProd, ReviewDto.class);
+            reviewDto.setUser(this.modelMapper.map(this.userRepo.findByProfile(ReviewProd.getProfiles()), UserShow.class));
+            reviewDTOs.add(reviewDto);
+        });
+        return new PageResponse(new ArrayList<>(reviewDTOs), pageReview.getNumber(), pageReview.getSize(), pageReview.getTotalPages(), pageReview.getTotalElements(), pageReview.isLast());
+    }
+    @Override
+    public ResponseEntity<?> getMyProductReview(User user, Long productId){
+        Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+        Profile profile = this.profileRepo.findByUser(user);
+        ReviewDto reviewDto = this.modelMapper.map(this.reviewRepo.findByProductAndProfiles(product, profile), ReviewDto.class);
+        reviewDto.setUser(this.modelMapper.map(user, UserShow.class));
+        return new ResponseEntity<>(reviewDto, OK);
+    }
+    @Override
+    public PageResponse getMyReviews(User user, PageableDto pageable){
+        Profile profile = this.profileRepo.findByUser(user);
+        Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
+        Sort sort = null;
+        if(pageable.getSortDir().equalsIgnoreCase("asc")){
+            sort = Sort.by(pageable.getSortBy()).ascending();
+        }
+        else{
+            sort = Sort.by(pageable.getSortBy()).descending();
+        }
+        Pageable p = PageRequest.of(pN, pS, sort);
+        Page<Review> pageReview = this.reviewRepo.findAllByProfiles(profile, p);
+        List<Review> productReview = pageReview.getContent();
+        List<ReviewDto> reviewDTOs = new ArrayList<>();
+        productReview.forEach((ReviewProd)-> {
+            ReviewDto reviewDto = this.modelMapper.map(ReviewProd, ReviewDto.class);
+            reviewDto.setUser(this.modelMapper.map(this.userRepo.findByProfile(ReviewProd.getProfiles()), UserShow.class));
+            reviewDTOs.add(reviewDto);
+        });
+        return new PageResponse(new ArrayList<>(reviewDTOs), pageReview.getNumber(), pageReview.getSize(), pageReview.getTotalPages(), pageReview.getTotalElements(), pageReview.isLast());
+    }
+
+//-----------------------------------------------------------------------Search ----------------------------------------------------------------------
+
+    @Override
+    public PageResponse searchAll(String keyword, PageableDto pageable, double minRating, double maxRating, double minPrice, double maxPrice){
+        Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
+        Page<Product> pageProducts = null;
+        if(pageable.getSortBy().equals("productId") || pageable.getSortBy().equals("originalPrice") || pageable.getSortBy().equals("offerPercentage") || pageable.getSortBy().equals("rating")){
+            Sort sort = Sort.by(pageable.getSortBy()).ascending();
+            if(pageable.getSortDir().equals("dsc") || pageable.getSortDir().equals("DSC")) {
+                sort = Sort.by(pageable.getSortBy()).descending();
+            }
+            Pageable p = PageRequest.of(pN, pS, sort);
+            pageProducts = this.productRepo.findByProductNameContainingIgnoreCase(keyword, p, minPrice, maxPrice, minRating, maxRating);
+        }
+        else{
+            Pageable p = PageRequest.of(pN, pS);
+            pageProducts = this.productRepo.findByProductNameIgnoreCase(keyword, p, minPrice, maxPrice, minRating,  maxRating);
+        }
+        List<Product> allProducts = pageProducts.getContent();
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(product.getImageUrls().get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(productDTO.stream().sequential().collect(Collectors.toList()), pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
 }

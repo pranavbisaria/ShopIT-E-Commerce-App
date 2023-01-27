@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,20 +15,27 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Profile {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<Address> address = new HashSet<>(0);
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL)
     private Cart cart = new Cart();
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "profiles", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<MyOrders> myOrders = new HashSet<>(0);
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "profiles", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Review> myReviews = new HashSet<>(0);
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private WishList wishList = new WishList();
-//    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private Set<Notification> notifications;
+    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL)
+    private WishList wishList;
+    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL)
+    private RecentProduct recentProduct = new RecentProduct();
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinTable(name = "profile_user",
+            joinColumns = @JoinColumn(name = "profile_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private User user;
 }

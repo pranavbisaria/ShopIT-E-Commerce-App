@@ -20,9 +20,10 @@ public class AddressDto {
     @Pattern(regexp="^(\\+\\d{2}( )?)?((\\(\\d{3}\\))|\\d{3})[- .]?\\d{3}[- .]?\\d{4}$", message = "Not a valid number, please enter a 10 digit valid mobile number")
     private String mobile;
     @NotNull
-    @Pattern(regexp="^[1-9]{1}[0-9]{2}\\\\s{0,1}[0-9]{3}$", message = "Not a valid pincode")
-    private int pincode;
+    @Pattern(regexp="^[1-9][0-9]{5}$", message = "Not a valid pincode")
+    private String pincode;
     private String locality;
+    @NotBlank
     private String addressLine;
     @NotBlank
     private String city;

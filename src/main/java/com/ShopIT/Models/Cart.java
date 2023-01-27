@@ -14,6 +14,8 @@ public class Cart {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private List<ProductInCart> cartProducts = new ArrayList<>(0);
+    @OneToOne(cascade = CascadeType.ALL)
+    private Profile profile;
 }

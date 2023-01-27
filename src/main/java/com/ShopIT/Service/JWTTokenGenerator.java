@@ -64,7 +64,7 @@ public class JWTTokenGenerator {
                     User user = userRepo.findByEmail(finalUsername).orElseThrow(() -> new ResourceNotFoundException("User", "Email: " + finalUsername, 0));
                     if (this.jwtTokenHelper.validateRefreshToken(token, userDetails)) {
                         String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
-                        return new ResponseEntity<>(new JwtAccessTokenResponse(myAccessToken, user.getFirstname(), user.getLastname(), user.getRoles()), OK);
+                        return new ResponseEntity<>(new JwtAccessTokenResponse(myAccessToken, user.getFirstname(), user.getLastname(), finalUsername, user.getRoles()), OK);
                     }
                     else {
                         return new ResponseEntity<>(new ApiResponse("Refresh Token Expired!!", false), HttpStatus.REQUEST_TIMEOUT);

@@ -17,7 +17,6 @@ public class StorageConfig {
     private String secretKey;
     @Value("${cloud.aws.region.static}")
     private String region;
-
     @Bean
     public AmazonS3 s3Client(){
         AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);

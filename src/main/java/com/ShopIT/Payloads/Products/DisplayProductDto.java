@@ -9,10 +9,10 @@ import java.util.Set;
 @NoArgsConstructor
 public class DisplayProductDto {
     private Long productId;
-    private Images imageUrls;
+    private Set<Images> imageUrls;
     private String productName;
     private double originalPrice;
     private double offerPercentage;
-    private Long NoOfOrders;
+    private Long quantityAvailable;
     private Integer rating;
 }

@@ -3,9 +3,13 @@ package com.ShopIT.Service.Impl;
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Config.UserCache;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
-import com.ShopIT.Models.*;
+import com.ShopIT.Models.MerchantProfile;
+import com.ShopIT.Models.Profile;
+import com.ShopIT.Models.Role;
+import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.*;
-import com.ShopIT.Repository.*;
+import com.ShopIT.Repository.RoleRepo;
+import com.ShopIT.Repository.UserRepo;
 import com.ShopIT.Security.JwtAuthRequest;
 import com.ShopIT.Security.JwtTokenHelper;
 import com.ShopIT.Service.AuthService;
@@ -15,10 +19,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.twilio.rest.microvisor.v1.App;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.http.HttpStatus;
@@ -28,8 +28,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 @Service @RequiredArgsConstructor
@@ -42,14 +40,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserDetailsService userDetailsService;
     private final JwtTokenHelper jwtTokenHelper;
     private final OTPService otpService;
-    private final ProfileRepo profileRepo;
-    private final MerchantProfileRepo merchantProfileRepo;
-    private final WishListRepo wishListRepo;
-    private final CartRepo cartRepo;
-    private final RecentProductRepo recentProductRepo;
-    private final ReviewRepo reviewRepo;
-    private final MyOrdersRepo myOrdersRepo;
-
     @Override
     public ResponseEntity<?> LoginAPI(JwtAuthRequest request) {
         request.setEmail(request.getEmail().trim().toLowerCase());
@@ -65,7 +55,6 @@ public class AuthServiceImpl implements AuthService {
                 response.setFirstname(user.getFirstname());
                 response.setLastname(user.getLastname());
                 response.setRoles(user.getRoles());
-                response.setEmail(request.getEmail());
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
@@ -79,22 +68,22 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<?> registerEmail(EmailDto emailDto, String type) throws Exception {
         String email = emailDto.getEmail().trim().toLowerCase();
-        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
+        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
         if (type.equals("merchant")) {
-            newRole = this.roleRepo.findById(1003).orElse(null);
+            newRole = this.roleRepo.findById(1003).get();
             if (this.emailExists(email)) {
                 User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-                if (user.getRoles().contains(newRole) || user.getRoles().contains(this.roleRepo.findById(1001).orElse(null))) {
+                if (user.getRoles().contains(newRole)) {
                     return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
                 }
-                newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
+                newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
             }
         } else if (this.emailExists(email)) {
             User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-            if (user.getRoles().contains(newRole) || user.getRoles().contains(this.roleRepo.findById(1001).orElse(null))) {
+            if (user.getRoles().contains(newRole)) {
                 return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
             }
-            newRole = (Role)this.roleRepo.findById(1003).orElse(null);
+            newRole = (Role)this.roleRepo.findById(1003).get();
         }
         try {
             if (this.userCache.isCachePresent(email)) {
@@ -127,9 +116,9 @@ public class AuthServiceImpl implements AuthService {
         userDto.setFirstname(userDto.getFirstname().trim());
         userDto.setLastname(userDto.getLastname().trim());
         String email = userDto.getEmail().trim().toLowerCase();
-        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
+        Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
         if (type.equals("merchant")) {
-            newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).orElse(null);
+            newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).get();
         }
         if (this.emailExists(email)) {
             User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
@@ -156,29 +145,11 @@ public class AuthServiceImpl implements AuthService {
                 }
                 if (type.equals("merchant")) {
                     MerchantProfile merchantProfile = new MerchantProfile();
-                    merchantProfile.setUser(user);
-                    this.merchantProfileRepo.saveAndFlush(merchantProfile);
-
                     user.setMerchantProfile(merchantProfile);
                 }
                 else{
                     Profile profile = new Profile();
-                    profile.setUser(user);
-                    this.profileRepo.save(profile);
-
                     user.setProfile(profile);
-                    
-                    Cart cart = new Cart();
-                    cart.setProfile(profile);
-                    this.cartRepo.save(cart);
-                    
-                    WishList wishList = new WishList();
-                    wishList.setProfile(profile);
-                    this.wishListRepo.save(wishList);
-                    
-                    RecentProduct recentProduct = new RecentProduct();
-                    recentProduct.setProfile(profile);
-                    this.recentProductRepo.save(recentProduct);
                 }
                 user.getRoles().add(newRole);
                 user.setPassword(this.passwordEncoder.encode(userDto.getPassword()));
@@ -191,7 +162,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
     @Override
-    public ResponseEntity<?> signGoogle(String Token) throws NullPointerException {
+    public ResponseEntity<?> signGoogle(String Token) throws JsonProcessingException, NullPointerException {
         Token = new String(Base64.decodeBase64(Token.split("\\.")[1]), StandardCharsets.UTF_8);
         ObjectMapper mapper = (new ObjectMapper()).configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         GoogleSignModel payload = null;
@@ -203,11 +174,11 @@ public class AuthServiceImpl implements AuthService {
                     String email = payload.email();
                     User user;
                     if (this.emailExists(email)) {
-                        user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
+                        user = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
                         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
                         String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
                         String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), email, user.getRoles());
+                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
                     } else {
                         user = new User();
                         user.setEmail(payload.email());
@@ -215,32 +186,13 @@ public class AuthServiceImpl implements AuthService {
                         user.setLastname(payload.family_name());
                         user.setPassword("Google");
                         user.setProfilePhoto(payload.picture());
-                        Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
+                        Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).get();
                         user.getRoles().add(role);
                         this.userRepo.save(user);
-
-                        Profile profile = new Profile();
-                        profile.setUser(user);
-                        this.profileRepo.save(profile);
-
-                        user.setProfile(profile);
-
-                        Cart cart = new Cart();
-                        cart.setProfile(profile);
-                        this.cartRepo.save(cart);
-
-                        WishList wishList = new WishList();
-                        wishList.setProfile(profile);
-                        this.wishListRepo.save(wishList);
-
-                        RecentProduct recentProduct = new RecentProduct();
-                        recentProduct.setProfile(profile);
-                        this.recentProductRepo.save(recentProduct);
-
                         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
                         String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
                         String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), email, user.getRoles());
+                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
                     }
                     return new ResponseEntity<>(jwtAuthResponse, HttpStatus.OK);
                 } else {
@@ -249,7 +201,7 @@ public class AuthServiceImpl implements AuthService {
             } else {
                 return new ResponseEntity<>(new ApiResponse("Invalid Action", false), HttpStatus.BAD_REQUEST);
             }
-        } catch (Exception e) {
+        } catch (NullPointerException | JsonProcessingException e) {
             e.printStackTrace();
             return new ResponseEntity<>(new ApiResponse("Invalid Token Input", false), HttpStatus.FORBIDDEN);
         }
@@ -257,7 +209,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<?> verifyOTPPasswordChange(OtpDto otpDto) throws ExecutionException {
         String email = otpDto.getEmail().trim().toLowerCase();
-        User userOTP = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
+        User userOTP = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
         if (!userOTP.isEnabled() || userOTP.getPassword()==null) {
             if (!this.userCache.isCachePresent(email)) {
                 return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);

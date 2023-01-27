@@ -23,7 +23,4 @@ public class ProductInCart {
     private Long noOfProducts = 1L;
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
     private User user;
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "cart_id")
-    private Cart cart;
 }

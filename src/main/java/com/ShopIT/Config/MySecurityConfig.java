@@ -25,8 +25,7 @@ public class MySecurityConfig{
     private static final String[] PUBLIC_URLS = {
             "/api/auth/**", "/file/**", "/swagger-ui.html", "/swagger-ui/index.html", "/v3/**", "/swagger-resources/**",
             "/swagger-ui/**", "/webjars/**", "/v2/**", "/", "/category/get**", "/products/getProductsByCategory/**",
-            "/products/get**", "/products/search/**", "/products/get/**", "/sponsor/**", "/getReview/**", "/ws/**","/topic/**",
-            "/error/**", "/error", "/scripts.js", "/#map", "/shopIt/**", "/user/**"
+            "/products/get**", "/products/search/**"
     };
     private final CustomUserDetailService customUserDetailService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;

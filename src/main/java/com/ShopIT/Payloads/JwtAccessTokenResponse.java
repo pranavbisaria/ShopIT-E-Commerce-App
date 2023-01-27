@@ -7,6 +7,5 @@ public record JwtAccessTokenResponse (
     String accessToken,
     String firstname,
     String lastname,
-    String Email,
     Set<Role> roles
 ){}

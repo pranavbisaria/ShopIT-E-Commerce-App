@@ -22,4 +22,6 @@ public class WishList {
     private Long Id;
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
     private Set<Product> products = new HashSet<>(0);
+    @OneToOne(cascade = CascadeType.ALL)
+    private Profile profile;
 }

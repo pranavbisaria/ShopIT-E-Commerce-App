@@ -1,5 +1,6 @@
 package com.ShopIT.Models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,10 @@ public class Review {
     @Column(length = 10000)
     private String description;
     private Date issueTime;
-    @Min(value = 0L)
-    private Long like=0L;
+    @ManyToOne(cascade = CascadeType.ALL)
+    private Profile profiles;
+    @ManyToOne
+    @JsonIgnore
+    @JoinColumn(name = "product_product_id")
+    private Product product;
 }

@@ -12,6 +12,5 @@ public class UserShow {
     private String firstname;
     private String lastname;
     private String email;
-    private String phoneNumber;
     private String profilePhoto;
 }

@@ -6,6 +6,8 @@ import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.ProductDto;
+import com.ShopIT.Payloads.ReviewDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,7 +28,7 @@ public interface ProductService {
     //----------------------------------------------------------------------------PRODUCTS-------------------------------------------------------------
     PageResponse getAllProducts(PageableDto pageable);
 
-    ResponseEntity<?> getProductById(Long productId);
+    ResponseEntity<?> getProductById(User user, Long productId);
 
     ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId);
 
@@ -44,6 +46,10 @@ public interface ProductService {
 
     ResponseEntity<?> removeProductFromCart(User user, Long productId);
 
+    ResponseEntity<?> deleteByProductInCart(User user, Long Id);
+
+    ResponseEntity<?> emptyMyCart(User user);
+
     PageResponse getAllProductsInCart(User user, PageableDto pageable);
 
     ResponseEntity<?> increaseProductQuantity(User user, Long productId);
@@ -55,4 +61,18 @@ public interface ProductService {
     ResponseEntity<?> removeFromWishlist(User user, Long productId);
 
     PageResponse getWishList(User user, PageableDto pageable);
+
+    //---------------------------------------------------------Recent Products-------------------------------------------------------------------------
+    ResponseEntity<?> getRecentProducts(User user);
+
+    // --------------------------------------------------Rating&Review--------------------------------------------------
+    ResponseEntity<?> addReview(User user, Long productId, ReviewDto reviewDto, MultipartFile[] images);
+
+    PageResponse getReviews(Long productId, PageableDto pageable);
+
+    ResponseEntity<?> getMyProductReview(User user, Long productId);
+
+    PageResponse getMyReviews(User user, PageableDto pageable);
+
+    PageResponse searchAll(String keyword, PageableDto pageable);
 }

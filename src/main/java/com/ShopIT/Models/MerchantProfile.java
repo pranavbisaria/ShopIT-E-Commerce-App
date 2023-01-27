@@ -6,8 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 @Getter
 @Setter
 @AllArgsConstructor
@@ -18,13 +19,13 @@ public class MerchantProfile {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Address> address = new HashSet<>(0);
+    private List<Address> address = new ArrayList<>(0);
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Cart cart = new Cart();
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<MyOrders> paymentsReceived = new HashSet<>(0);
+    private List<MerchantOrderReceived> paymentsReceived = new ArrayList<>(0);
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Product> products = new HashSet<>(0);
-//    @ManyToMany
-//    private Set<Notification> notifications;
+    private List<Product> products = new ArrayList<>(0);
+    @OneToOne(cascade = CascadeType.ALL)
+    private User user;
 }

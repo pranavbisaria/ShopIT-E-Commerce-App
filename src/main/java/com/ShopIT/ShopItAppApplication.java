@@ -12,6 +12,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+
+import java.awt.*;
 import java.util.List;
 
 @SpringBootApplication
@@ -27,13 +31,16 @@ public class ShopItAppApplication implements CommandLineRunner {
 	public ModelMapper modelMapper(){
 		return new ModelMapper();
 	}
+//	Resource input = new ClassPathResource("assets/Logo.png");
+//	System.out.print()
+//	(input.getURI().toString());
 	@Override
 	public void run(String... args){
 		try{
 			Role role1 = new Role();
 			role1.setId(AppConstants.ROLE_ADMIN);
 			role1.setName("ROLE_ADMIN");
-
+//			System.out.println();
 			Role role2 = new Role();
 			role2.setId(AppConstants.ROLE_NORMAL);
 			role2.setName("ROLE_NORMAL");

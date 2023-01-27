@@ -1,72 +1,48 @@
-var stompClient = null;
-var notificationCount = 0;
-
+let stompClient = null;
+let notificationCount = 0;
 $(document).ready(function() {
     console.log("Index page is ready");
     connect();
-
-    $("#send").click(function() {
-        sendMessage();
-    });
-
-    $("#send-private").click(function() {
-        sendPrivateMessage();
-    });
-
     $("#notifications").click(function() {
         resetNotificationCount();
     });
 });
-
 function connect() {
-    var socket = new SockJS('/our-websocket');
+    const socket = new SockJS('/shopIt');
+    //                or
+    // const socket = new SockJS('https://www.shopitanywhere.live/shopIt');
     stompClient = Stomp.over(socket);
+    //                  or
+    // stompClient = Stomp.over('ws://localhost/shopIt');
     stompClient.connect({}, function (frame) {
         console.log('Connected: ' + frame);
         updateNotificationDisplay();
-        stompClient.subscribe('/topic/messages', function (message) {
-            showMessage(JSON.parse(message.body).content);
-        });
-
-        stompClient.subscribe('/user/topic/private-messages', function (message) {
-            showMessage(JSON.parse(message.body).content);
-        });
-
-        stompClient.subscribe('/topic/global-notifications', function (message) {
+        stompClient.subscribe('/topic/globalNotifications', function (message) {
             notificationCount = notificationCount + 1;
+            let notificationObj = JSON.parse(message.body);
+            showMessage('<b>'+notificationObj.head+':</b> '+notificationObj.body);
             updateNotificationDisplay();
         });
-
-        stompClient.subscribe('/user/topic/private-notifications', function (message) {
+        let id = Math.floor(Math.random()*1000000000);
+        showMessage("User Logged In using the ID: "+id);
+        stompClient.subscribe('/topic/privateNotifications/'+id, function (message) {
             notificationCount = notificationCount + 1;
+            let notificationObj = JSON.parse(message.body);
+            showMessage('<b>'+notificationObj.head+':</b> '+notificationObj.body);
             updateNotificationDisplay();
         });
     });
 }
-
-function showMessage(message) {
-    $("#messages").append("<tr><td>" + message + "</td></tr>");
+function showMessage(body) {
+    $("#notification").append("<tr><td>" + body + "</td></tr>");
 }
-
-function sendMessage() {
-    console.log("sending message");
-    stompClient.send("/ws/message", {}, JSON.stringify({'messageContent': $("#message").val()}));
-}
-
-function sendPrivateMessage() {
-    console.log("sending private message");
-    stompClient.send("/ws/private-message", {}, JSON.stringify({'messageContent': $("#private-message").val()}));
-}
-
 function updateNotificationDisplay() {
-    if (notificationCount == 0) {
+    if (notificationCount === 0) {
         $('#notifications').hide();
     } else {
-        $('#notifications').show();
-        $('#notifications').text(notificationCount);
+        $('#notifications').show().text(notificationCount);
     }
 }
-
 function resetNotificationCount() {
     notificationCount = 0;
     updateNotificationDisplay();

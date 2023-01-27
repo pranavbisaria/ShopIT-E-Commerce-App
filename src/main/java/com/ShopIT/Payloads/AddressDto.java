@@ -23,6 +23,7 @@ public class AddressDto {
     @Pattern(regexp="^[1-9][0-9]{5}$", message = "Not a valid pincode")
     private String pincode;
     private String locality;
+    @NotBlank
     private String addressLine;
     @NotBlank
     private String city;

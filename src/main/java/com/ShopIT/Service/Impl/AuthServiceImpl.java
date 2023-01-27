@@ -65,6 +65,7 @@ public class AuthServiceImpl implements AuthService {
                 response.setFirstname(user.getFirstname());
                 response.setLastname(user.getLastname());
                 response.setRoles(user.getRoles());
+                response.setEmail(request.getEmail());
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
@@ -206,7 +207,7 @@ public class AuthServiceImpl implements AuthService {
                         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
                         String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
                         String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
+                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), email, user.getRoles());
                     } else {
                         user = new User();
                         user.setEmail(payload.email());
@@ -217,10 +218,29 @@ public class AuthServiceImpl implements AuthService {
                         Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
                         user.getRoles().add(role);
                         this.userRepo.save(user);
+
+                        Profile profile = new Profile();
+                        profile.setUser(user);
+                        this.profileRepo.save(profile);
+
+                        user.setProfile(profile);
+
+                        Cart cart = new Cart();
+                        cart.setProfile(profile);
+                        this.cartRepo.save(cart);
+
+                        WishList wishList = new WishList();
+                        wishList.setProfile(profile);
+                        this.wishListRepo.save(wishList);
+
+                        RecentProduct recentProduct = new RecentProduct();
+                        recentProduct.setProfile(profile);
+                        this.recentProductRepo.save(recentProduct);
+
                         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
                         String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
                         String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
-                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), user.getRoles());
+                        jwtAuthResponse = new JwtAuthResponse(myAccessToken, myRefreshToken, user.getFirstname(), user.getLastname(), email, user.getRoles());
                     }
                     return new ResponseEntity<>(jwtAuthResponse, HttpStatus.OK);
                 } else {

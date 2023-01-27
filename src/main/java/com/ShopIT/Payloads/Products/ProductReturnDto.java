@@ -17,6 +17,7 @@ import java.util.Set;
 public class ProductReturnDto {
     private Long productId;
     @NotEmpty
+    Boolean availInWishlist = false;
     private String productName;
     private List<Images> imageUrls;
     @NotEmpty

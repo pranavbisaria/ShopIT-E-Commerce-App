@@ -42,7 +42,7 @@ public interface ProductService {
 
     PageResponse getAllProductByCategory(Integer categoryId, PageableDto pageable);
 
-    ResponseEntity<?> addProductToCart(User user, Long productId);
+    ResponseEntity<?> addProductToCart(User user, Long productId, Long n);
 
     ResponseEntity<?> removeProductFromCart(User user, Long productId);
 
@@ -74,5 +74,5 @@ public interface ProductService {
 
     PageResponse getMyReviews(User user, PageableDto pageable);
 
-    PageResponse searchAll(String keyword, PageableDto pageable);
+    PageResponse searchAll(String keyword, PageableDto pageable, double minRating, double maxRating, double minPrice, double maxPrice);
 }

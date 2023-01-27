@@ -2,55 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Hello WS</title>
+    <title>ShopIt Backend server using Springboot</title>
     <link href="/webjars/bootstrap/5.2.3/css/bootstrap.min.css" rel="stylesheet">
-    <script src="/webjars/jquery/3.3.1-1/jquery.min.js"></script>
+    <script src="/webjars/jquery/3.6.2/jquery.min.js"></script>
     <script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
     <script src="/scripts.js"></script>
+    <link rel="icon" type="image/x-icon" href="https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/0085dd88-a820-409d-a52c-263fda6a2a5d.jpg">
+    <meta name="author" content="Pranav Bisaria">
+    <style>
+        html{
+            scroll-behavior: smooth;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
-<div class="container" style="margin-top: 50px">
-    <div class="row">
-        <div class="col-md-12">
-            <form class="form-inline">
-                <div class="form-group">
-                    <label for="message">Message</label>
-                    <input type="text" id="message" class="form-control" placeholder="Enter your message here...">
-                </div>
-                <button id="send" class="btn btn-default" type="button">Send</button>
-            </form>
-        </div>
-    </div>
-    <div class="row" style="margin-top: 10px">
-        <div class="col-md-12">
-            <form class="form-inline">
-                <div class="form-group">
-                    <label for="private-message">Private Message</label>
-                    <input type="text" id="private-message" class="form-control" placeholder="Enter your message here...">
-                </div>
-                <button id="send-private" class="btn btn-default" type="button">Send Private Message</button>
-            </form>
-        </div>
-    </div>
+<div style="text-align: center; height:100vh; width:100vw; padding: 10vh">This is the backend server of SHOPIT
+    <BR><BR><BR>
+    <img src="https://elasticbeanstalk-ap-south-1-665793442236.s3.ap-south-1.amazonaws.com/resources/images/0085dd88-a820-409d-a52c-263fda6a2a5d.jpg" alt="APPLICATION LOGO" style="border: 2px solid black; border-radius: 100px; height:200px;">
+    <BR><BR><BR>
+    <h1>Designed and Developed by <b>Pranav Bisaria</b></h1>
+    <br><br><br>
+    <a href = "/swagger-ui/index.html">API Documentation</a>
+    or
+    <a href = "#map">Click here to view the notification panel</a>
+</div>
+<div class="container" id="map" style="margin-top: 25vh; min-height:100vh; width:100vw;">
     <div class="row">
         <div class="col-md-12">
             <table id="message-history" class="table table-striped">
                 <thead>
                 <tr>
-                    <th>Messages
+                    <th><h1>Notification Panel
                         <span
                                 id="notifications"
                                 style="
-                                    color: white;
-                                    background-color: red;
-                                    padding-left: 15px;
-                                    padding-right: 15px;">
-                            </span>
-                    </th>
+                                color: white;
+                                background-color: red;
+                                padding-left: 15px;
+                                padding-right: 15px;">
+                        </span>
+                    </h1></th>
                 </tr>
                 </thead>
-                <tbody id="messages">
+                <tbody id="notification">
                 </tbody>
             </table>
         </div>

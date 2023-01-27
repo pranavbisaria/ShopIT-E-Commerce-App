@@ -18,10 +18,8 @@ public class MerchantProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Address> address = new ArrayList<>(0);
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Cart cart = new Cart();
+    private Address address;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<MerchantOrderReceived> paymentsReceived = new ArrayList<>(0);
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)

@@ -47,17 +47,19 @@ public class PaymentController {
         long amt = 0L;
         for (ProductInCart product : products) {
             Product getProduct = product.getProduct();
-            amt += (long)(getProduct.getOriginalPrice()*(100-getProduct.getOfferPercentage())*product.getNoOfProducts());
+            amt += ((long)(getProduct.getOriginalPrice()*(100-getProduct.getOfferPercentage())/100))*100*product.getNoOfProducts();
         }
+        amt += 3000; // delivery
         return this.paymentService.createOrder(profile, amt, address);
     }
     @PreAuthorize("hasAnyRole('NORMAL', 'ADMIN')")
-    @PostMapping("/createOrder/{productId}/address/{addressId}")
-    public ResponseEntity<?> newPayment(@CurrentUser User user, @PathVariable("productId") Long productId, @PathVariable Long addressId) throws Exception {
+    @PostMapping("/createOrder/{productId}/quantity/{n}/address/{addressId}")
+    public ResponseEntity<?> newPayment(@CurrentUser User user, @PathVariable("productId") Long productId, @PathVariable Long n, @PathVariable Long addressId) throws Exception {
         Profile profile = this.profileRepo.findByUser(user);
         Address address = this.addressRepo.findById(addressId).orElseThrow(()-> new ResourceNotFoundException("Address", "addressId", addressId));
         Product product = this.productRepo.findById(productId).orElseThrow(()-> new ResourceNotFoundException("Product", "productId", productId));
-        long amt = (long)(product.getOriginalPrice()*(100-product.getOfferPercentage()));
+        long amt = ((long)(product.getOriginalPrice()*(100-product.getOfferPercentage())/100))*100*n;
+        amt += 3000; // delivery
         if(!profile.getAddress().contains(address)){
             return new ResponseEntity<>(new ApiResponse("User not authorize to perform the required action", false), HttpStatus.FORBIDDEN);
         }
@@ -74,6 +76,16 @@ public class PaymentController {
             return new ResponseEntity<>(new ApiResponse("Please Update Your Address first", false), HttpStatus.NOT_ACCEPTABLE);
         }
         return this.paymentService.updateOrder(user, profile, response);
+    }
+    @PreAuthorize("hasAnyRole('NORMAL', 'ADMIN')")
+    @PostMapping("/update_single_order/product/{productId}/quantity/{n}")
+    public ResponseEntity<?> updateDirectOrder(@CurrentUser User user, @PathVariable Long n, @PathVariable Long productId, @RequestBody PaymentReturnResponse response) throws SignatureException {
+        Profile profile = this.profileRepo.findByUser(user);
+        Product product = this.productRepo.findById(productId).orElseThrow(()->new ResourceNotFoundException("Product", "productId", productId));
+        if(profile.getAddress()==null || profile.getAddress().isEmpty()){
+            return new ResponseEntity<>(new ApiResponse("Please Update Your Address first", false), HttpStatus.NOT_ACCEPTABLE);
+        }
+        return this.paymentService.updateDirectOrder(product, n, profile, response);
     }
     @PreAuthorize("hasAnyRole('NORMAL', 'ADMIN')")
     @GetMapping("/getAllOrders")

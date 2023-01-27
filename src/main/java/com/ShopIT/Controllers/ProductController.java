@@ -77,13 +77,13 @@ public class ProductController {
 // ---------------------------------------------------------------CART----------------------------------------------------------------------------
 
     @PreAuthorize("hasAnyRole('ADMIN', 'NORMAL')")
-    @PostMapping("/addToCart/{productId}")
-    public ResponseEntity<?> addProductToCart(@CurrentUser User user, @PathVariable("productId") Long productId) throws Exception{
+    @PostMapping("/addToCart/{productId}/quantity/{n}")
+    public ResponseEntity<?> addProductToCart(@CurrentUser User user, @PathVariable("productId") Long productId, @PathVariable("n") Long n) throws Exception{
         if(user == null){
             return new ResponseEntity<>(new ApiResponse("Invalid Action!!", false), HttpStatus.NOT_ACCEPTABLE);
         }
         try {
-            return this.productService.addProductToCart(user, productId);
+            return this.productService.addProductToCart(user, productId, n);
         }
         catch(Exception e){
             return new ResponseEntity<>(e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -174,10 +174,14 @@ public class ProductController {
     public ResponseEntity<?> searchProduct(@PathVariable("keyword") String keyword,
                                            @RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
                                            @RequestParam(value ="pageSize", defaultValue = "5", required = false) Integer pageSize,
-                                           @RequestParam(value ="sortBy", defaultValue = "productId", required = false) String sortBy,
-                                           @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir
+                                           @RequestParam(value ="sortBy", defaultValue = "productName", required = false) String sortBy,
+                                           @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir,
+                                           @RequestParam(value ="minRating", defaultValue = "0", required = false) double minRating,
+                                           @RequestParam(value ="maxRating", defaultValue = "5", required = false) double maxRating,
+                                           @RequestParam(value ="minPrice", defaultValue = "0", required = false) double minPrice,
+                                           @RequestParam(value ="maxPrice", defaultValue = "9999999", required = false) double maxPrice
     ) throws Exception{
-        return new ResponseEntity<>(this.productService.searchAll(keyword, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
+        return new ResponseEntity<>(this.productService.searchAll(keyword, new PageableDto(pageNumber, pageSize, sortBy, sortDir), minRating, maxRating, minPrice, maxPrice), OK);
     }
 
 //----------------------------------------------Rating and reviews -------------------------------------------------------------------

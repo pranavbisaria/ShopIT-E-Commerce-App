@@ -110,6 +110,7 @@ public class UserServiceImpl implements UserService {
                     this.jwtTokenHelper.generateRefreshToken(userDetails),
                     user.getFirstname(),
                     user.getLastname(),
+                    otpDto.getEmail(),
                     user.getRoles()
             );
             return new ResponseEntity<>(response, HttpStatus.OK);

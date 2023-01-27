@@ -114,6 +114,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ResponseEntity<?> getProductById(User user, Long productId) {
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
+        ProductReturnDto productReturnDto = new ProductReturnDto();
+        productReturnDto = this.modelMapper.map(product, ProductReturnDto.class);
         if(user != null) {
             Profile profile = this.profileRepo.findByUser(user);
             RecentProduct recent = this.recentProductRepo.findByProfile(profile);
@@ -123,8 +125,12 @@ public class ProductServiceImpl implements ProductService {
                 recent.setProducts(new ArrayList<>(recent.getProducts().subList(0, 8)));
             }
             recent.getProducts().add(0, product);
+            WishList wishList = this.wishListRepo.findByProfile(profile);
+            if(wishList.getProducts().contains(product)){
+                productReturnDto.setAvailInWishlist(true);
+            }
         }
-        return new ResponseEntity<>(this.modelMapper.map(product, ProductReturnDto.class), OK);
+        return new ResponseEntity<>(productReturnDto, OK);
     }
     @Override
     public ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId) {
@@ -241,16 +247,19 @@ public class ProductServiceImpl implements ProductService {
 //----------------------------------------------------------CART--------------------------------------------------------------------------------
 
     @Override
-    public ResponseEntity<?> addProductToCart(User user, Long productId){
+    public ResponseEntity<?> addProductToCart(User user, Long productId, Long n){
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: " + productId, 0));
         if(this.productInCartRepo.existsByProductAndUser(product, user)){
             return new ResponseEntity<>(new ApiResponse("Product already exist in the cart", true), HttpStatus.CONFLICT);
+        }
+        if(n >= product.getQuantityAllowedPerUser()){
+            return  new ResponseEntity<>(new ApiResponse("Product has reached its maximum quantity", false), HttpStatus.METHOD_NOT_ALLOWED);
         }
         Profile profile = this.profileRepo.findByUser(user);
         Cart cart = this.cartRepo.findByProfile(profile);
         ProductInCart productInCart = new ProductInCart();
         productInCart.setProduct(product);
-        productInCart.setNoOfProducts(1L);
+        productInCart.setNoOfProducts(n);
         productInCart.setDateOfOrder(new Date(System.currentTimeMillis()));
         productInCart.setUser(user);
         cart.getCartProducts().add(productInCart);
@@ -298,6 +307,7 @@ public class ProductServiceImpl implements ProductService {
         for (ProductInCart product : allProducts) {
             ProductInCartDto productDto = this.modelMapper.map(product, ProductInCartDto.class);
             productDto.getProduct().setImageUrls(product.getProduct().getImageUrls().get(0));
+            productDto.setAvailable(product.getProduct().getQuantityAvailable() >= product.getNoOfProducts());
             productDTO.add(productDto);
         }
         return new PageResponse(new ArrayList<>(productDTO), pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
@@ -331,7 +341,8 @@ public class ProductServiceImpl implements ProductService {
         Profile profile = this.profileRepo.findByUser(user);
         WishList wishList = this.wishListRepo.findByProfile(profile);
         if(wishList.getProducts().contains(product)){
-            return new ResponseEntity<>(new ApiResponse("Product already present in your wishlist", true), HttpStatus.BAD_REQUEST);
+            wishList.getProducts().remove(product);
+            return new ResponseEntity<>(new ApiResponse("Product removed from WishList", true), HttpStatus.OK);
         }
         wishList.getProducts().add(product);
         return new ResponseEntity<>(new ApiResponse("Product Added To WishList", true), HttpStatus.OK);
@@ -474,17 +485,21 @@ public class ProductServiceImpl implements ProductService {
 //-----------------------------------------------------------------------Search ----------------------------------------------------------------------
 
     @Override
-    public PageResponse searchAll(String keyword, PageableDto pageable){
+    public PageResponse searchAll(String keyword, PageableDto pageable, double minRating, double maxRating, double minPrice, double maxPrice){
         Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
-        Sort sort = null;
-        if(pageable.getSortDir().equalsIgnoreCase("asc")){
-            sort = Sort.by(pageable.getSortBy()).ascending();
+        Page<Product> pageProducts = null;
+        if(pageable.getSortBy().equals("productId") || pageable.getSortBy().equals("originalPrice") || pageable.getSortBy().equals("offerPercentage") || pageable.getSortBy().equals("rating")){
+            Sort sort = Sort.by(pageable.getSortBy()).ascending();
+            if(pageable.getSortDir().equals("dsc") || pageable.getSortDir().equals("DSC")) {
+                sort = Sort.by(pageable.getSortBy()).descending();
+            }
+            Pageable p = PageRequest.of(pN, pS, sort);
+            pageProducts = this.productRepo.findByProductNameContainingIgnoreCase(keyword, p, minPrice, maxPrice, minRating, maxRating);
         }
         else{
-            sort = Sort.by(pageable.getSortBy()).descending();
+            Pageable p = PageRequest.of(pN, pS);
+            pageProducts = this.productRepo.findByProductNameIgnoreCase(keyword, p, minPrice, maxPrice, minRating,  maxRating);
         }
-        Pageable p = PageRequest.of(pN, pS, sort);
-        Page<Product> pageProducts = this.productRepo.findAll(keyword, p);
         List<Product> allProducts = pageProducts.getContent();
         List<DisplayProductDto> productDTO = new ArrayList<>();
         for (Product product : allProducts) {
@@ -492,6 +507,6 @@ public class ProductServiceImpl implements ProductService {
             productDto.setImageUrls(product.getImageUrls().get(0));
             productDTO.add(productDto);
         }
-        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+        return new PageResponse(productDTO.stream().sequential().collect(Collectors.toList()), pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
 }

@@ -65,7 +65,16 @@
 <div style="text-align: center; font-size: 20px">
     <a href="https://www.figma.com/file/kC4mLUxZ87Q22U6N5orkk7/E-Commerce?node-id=0%3A1"><b>>> Click to view Figma Designs <<</b></a>
 </div>
-<div class="logo-slider">
+<div style="border: 1px solid #575757;
+    padding: 20px;
+    overflow: hidden;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;">
     <img src="src/main/resources/static/resources/Project Screenshots/0.jpg" alt="Logo" height="500px" class="screenshot">
     <img src="src/main/resources/static/resources/Project Screenshots/1.jpg" alt="Logo" height="500px" class="screenshot">
     <img src="src/main/resources/static/resources/Project Screenshots/2.jpg" alt="Logo" height="500px" class="screenshot">
@@ -144,7 +153,16 @@ You only need to install the JAVA 17.0.5 LTS from Oracle, go to the following li
 
 This project includes all the APIs related to provide various functionality for a E-Commerce website or application.
 
-<div class="logo-slider">
+<div style="border: 1px solid #575757;
+    padding: 20px;
+    overflow: hidden;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;">
     <img src="src/main/resources/static/resources/Project Screenshots/21.png" alt="Logo" class="screenshotUsusge">
     <img src="src/main/resources/static/resources/Project Screenshots/22.png" alt="Logo" class="screenshotUsuage">
     <img src="src/main/resources/static/resources/Project Screenshots/23.png" alt="Logo" class="screenshotUsuage">
@@ -255,30 +273,3 @@ Project Link: [https://github.com/pranavbisaria/ShopIT-E-Commerce-App](https://g
 [Postgres-url]: https://www.postgresql.org/
 [aws.amazon.com]: https://img.shields.io/badge/Amazon_AWS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white
 [Amazon-url]: https://aws.amazon.com/
-
-
-
-<style>
-.logo-slider {
-    border: 1px solid #575757;
-    padding: 20px;
-    overflow: hidden;
-    max-width: 900px;
-    width: 100%;
-    margin: 0 auto;
-    position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-evenly;
-}
-.screenshotUsuage{
-    min-width: 70vh;
-    margin: 20px;
-}
-html{
-    scroll-behavior: smooth;
-}
-.screenshot{
-    margin: 20px;
-}
-</style>

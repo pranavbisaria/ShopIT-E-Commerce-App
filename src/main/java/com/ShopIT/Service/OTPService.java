@@ -4,6 +4,7 @@ import com.ShopIT.Config.TwilioConfig;
 import com.twilio.rest.api.v2010.account.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import java.util.Random;
 
@@ -42,6 +43,11 @@ public class OTPService {
         String number = "+91"+phoneNumber;
         Random rand = new Random();
         int otpCheck = rand.nextInt(899999) + 100000;
+        sendSMS(number, name, otpCheck);
+        return otpCheck;
+    }
+    @Async
+    public void sendSMS(String number, String name, int otpCheck){
         try {
             String myMessage = "Dear " + name + "," +
                     "\nThe One Time Password (OTP) to verify your mobile number is " + otpCheck +
@@ -56,6 +62,5 @@ public class OTPService {
         catch(Exception e){
             e.printStackTrace();
         }
-        return otpCheck;
     }
 }

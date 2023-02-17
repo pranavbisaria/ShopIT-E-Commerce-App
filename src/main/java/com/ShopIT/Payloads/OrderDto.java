@@ -22,9 +22,10 @@ import java.util.Set;
 @NoArgsConstructor
 public class OrderDto {
     private String orderId;
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    private String image;
+    @JsonFormat(pattern = "dd-MMM-yyyy")
     private Date dateOfPurchase;
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    @JsonFormat(pattern = "dd-MMM-yyyy")
     private Date created_at;
     private Set<DeliveryStatus> deliveryStatus = new HashSet<>(0);
     private Integer amount;

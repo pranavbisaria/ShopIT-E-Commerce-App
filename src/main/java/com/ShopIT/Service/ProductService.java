@@ -1,6 +1,7 @@
 package com.ShopIT.Service;
 
 import com.ShopIT.Models.Images;
+import com.ShopIT.Models.QuestionModel;
 import com.ShopIT.Payloads.PageResponse;
 import com.ShopIT.Models.User;
 import com.ShopIT.Payloads.Categories.CategoryDTO;
@@ -28,6 +29,8 @@ public interface ProductService {
     //----------------------------------------------------------------------------PRODUCTS-------------------------------------------------------------
     PageResponse getAllProducts(PageableDto pageable);
 
+    PageResponse getAllMerchantProducts(User user, PageableDto pageable);
+
     ResponseEntity<?> getProductById(User user, Long productId);
 
     ResponseEntity<?> addProduct(User user, MultipartFile[] images, ProductDto productDto, Integer categoryId);
@@ -41,6 +44,8 @@ public interface ProductService {
     ResponseEntity<?> deleteProduct(User user, Long productId);
 
     PageResponse getAllProductByCategory(Integer categoryId, PageableDto pageable);
+
+    PageResponse getAllProductByCategoryMerchant(User user, Integer categoryId, PageableDto pageable);
 
     ResponseEntity<?> addProductToCart(User user, Long productId, Long n);
 
@@ -75,4 +80,14 @@ public interface ProductService {
     PageResponse getMyReviews(User user, PageableDto pageable);
 
     PageResponse searchAll(String keyword, PageableDto pageable, double minRating, double maxRating, double minPrice, double maxPrice);
+
+    //merchant side
+    PageResponse searchAllMerchant(User user, String keyword, PageableDto pageable, double minRating, double maxRating, double minPrice, double maxPrice);
+
+    //---------------------------------------------------FAQs------------------------------------------------------------------------------------
+    PageResponse getAllFAQ(Long productId, PageableDto pageable);
+
+    ResponseEntity<?> addFAQ(User user, Long ProductId, QuestionModel questionModel);
+
+    ResponseEntity<?> answerAFAQ(User user, Long ProductId, QuestionModel questionModel, Integer QuestionID);
 }

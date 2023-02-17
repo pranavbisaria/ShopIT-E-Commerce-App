@@ -3,13 +3,15 @@ package com.ShopIT.Service;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Properties;
 
 @Service
 public class EmailService {
-    public boolean sendEmail(String subject, String message, String to){
+    @Async
+    public void sendEmail(String subject, String message, String to){
         //rest of the code...
 
         boolean f = false;
@@ -60,11 +62,9 @@ public class EmailService {
              Transport.send(m);
 
              System.out.println("Sent success.................");
-             f =true;
          }
          catch (Exception e){
              e.printStackTrace();
          }
-        return f;
     }
 }

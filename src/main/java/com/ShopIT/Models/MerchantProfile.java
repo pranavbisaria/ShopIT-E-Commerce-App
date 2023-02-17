@@ -20,7 +20,7 @@ public class MerchantProfile {
     private Long Id;
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Address address;
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<MerchantOrderReceived> paymentsReceived = new ArrayList<>(0);
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Product> products = new ArrayList<>(0);

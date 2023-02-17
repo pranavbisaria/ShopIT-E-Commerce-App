@@ -1,4 +1,5 @@
 package com.ShopIT.Service.Impl;
+import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
 import com.ShopIT.Models.*;
 import com.ShopIT.Payloads.*;
@@ -31,6 +32,7 @@ public class ProductServiceImpl implements ProductService {
     private final ModelMapper modelMapper;
     private final CategoryRepo categoryRepo;
     private final StorageServices storageServices;
+    private final RoleRepo roleRepo;
     private final ProductRepo productRepo;
     private final UserRepo userRepo;
     private final WishListRepo wishListRepo;
@@ -39,6 +41,7 @@ public class ProductServiceImpl implements ProductService {
     private final RecentProductRepo recentProductRepo;
     private final ProfileRepo profileRepo;
     private final ReviewRepo reviewRepo;
+    private final QuestionsRepo questionsRepo;
     @Override
     public ResponseEntity<?> addCategory(String CategoryName, MultipartFile photo) {
         Category category = new Category();
@@ -112,9 +115,30 @@ public class ProductServiceImpl implements ProductService {
         return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
     }
     @Override
+    public PageResponse getAllMerchantProducts(User user, PageableDto pageable){
+        Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
+        Sort sort = null;
+        if(pageable.getSortDir().equalsIgnoreCase("asc")){
+            sort = Sort.by(pageable.getSortBy()).ascending();
+        }
+        else{
+            sort = Sort.by(pageable.getSortBy()).descending();
+        }
+        Pageable p = PageRequest.of(pN, pS, sort);
+        Page<Product> pageProducts = this.productRepo.findAllByProvider(p, user);
+        List<Product> allProducts = pageProducts.getContent();
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(product.getImageUrls().get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+    }
+    @Override
     public ResponseEntity<?> getProductById(User user, Long productId) {
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
-        ProductReturnDto productReturnDto = new ProductReturnDto();
+        ProductReturnDto productReturnDto = null;
         productReturnDto = this.modelMapper.map(product, ProductReturnDto.class);
         if(user != null) {
             Profile profile = this.profileRepo.findByUser(user);
@@ -234,6 +258,28 @@ public class ProductServiceImpl implements ProductService {
         }
         Pageable p = PageRequest.of(pN, pS, sort);
         Page<Product> pageProducts = this.productRepo.findByCategoryContaining(category, p);
+        List<Product> allProducts = pageProducts.getContent();
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(product.getImageUrls().get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(new ArrayList<>(productDTO),pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+    }
+    @Override
+    public PageResponse getAllProductByCategoryMerchant(User user, Integer categoryId, PageableDto pageable){
+        Category category = this.categoryRepo.findById(categoryId).orElseThrow(()-> new ResourceNotFoundException("Category", "categoryId", categoryId));
+        Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
+        Sort sort = null;
+        if(pageable.getSortDir().equalsIgnoreCase("asc")){
+            sort = Sort.by(pageable.getSortBy()).ascending();
+        }
+        else{
+            sort = Sort.by(pageable.getSortBy()).descending();
+        }
+        Pageable p = PageRequest.of(pN, pS, sort);
+        Page<Product> pageProducts = this.productRepo.findByCategoryContainingAndProvider(category, user, p);
         List<Product> allProducts = pageProducts.getContent();
         List<DisplayProductDto> productDTO = new ArrayList<>();
         for (Product product : allProducts) {
@@ -402,6 +448,8 @@ public class ProductServiceImpl implements ProductService {
 // --------------------------------------------------Rating&Review--------------------------------------------------
     @Override
     public ResponseEntity<?> addReview(User user, Long productId, ReviewDto reviewDto, MultipartFile[] images){
+        if (FileValidation(images))
+            return new ResponseEntity<>(new ApiResponse("File is not of image type(JPEG/ JPG or PNG)!!!", false), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
         Profile profile = this.profileRepo.findByUser(user);
         Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID: "+productId, 0));
         if(this.reviewRepo.existsByProfilesAndProduct(profile, product)){
@@ -412,7 +460,9 @@ public class ProductServiceImpl implements ProductService {
         float newRating = (((product.getRating() * noOfRating) + Integer.parseInt(reviewDto.getRating()))/ (noOfRating + 1f));
         product.setRating(newRating);
         this.productRepo.save(product);
-        Review review = this.modelMapper.map(reviewDto, Review.class);
+        Review review = new Review();
+        review.setRating(Integer.parseInt(reviewDto.getRating()));
+        review.setDescription(reviewDto.getDescription());
         if(!Objects.isNull(images)){
             Arrays.stream(images).forEach(multipartFile -> {
                 Images rImages = new Images();
@@ -425,6 +475,7 @@ public class ProductServiceImpl implements ProductService {
         review.setIssueTime(new Date(System.currentTimeMillis()));
         this.reviewRepo.save(review);
         reviewDto.setId(review.getId());
+        reviewDto.setImages(review.getImages());
         reviewDto.setUser(this.modelMapper.map(user, UserShow.class));
         reviewDto.setIssueTime(review.getIssueTime());
         return new ResponseEntity<>(reviewDto, HttpStatus.OK);
@@ -483,7 +534,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
 //-----------------------------------------------------------------------Search ----------------------------------------------------------------------
-
+//merchant side
     @Override
     public PageResponse searchAll(String keyword, PageableDto pageable, double minRating, double maxRating, double minPrice, double maxPrice){
         Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
@@ -508,5 +559,60 @@ public class ProductServiceImpl implements ProductService {
             productDTO.add(productDto);
         }
         return new PageResponse(productDTO.stream().sequential().collect(Collectors.toList()), pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+    }
+//merchant side
+    @Override
+    public PageResponse searchAllMerchant(User user, String keyword, PageableDto pageable, double minRating, double maxRating, double minPrice, double maxPrice){
+        Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
+        Page<Product> pageProducts = null;
+        if(pageable.getSortBy().equals("productId") || pageable.getSortBy().equals("originalPrice") || pageable.getSortBy().equals("offerPercentage") || pageable.getSortBy().equals("rating")){
+            Sort sort = Sort.by(pageable.getSortBy()).ascending();
+            if(pageable.getSortDir().equals("dsc") || pageable.getSortDir().equals("DSC")) {
+                sort = Sort.by(pageable.getSortBy()).descending();
+            }
+            Pageable p = PageRequest.of(pN, pS, sort);
+            pageProducts = this.productRepo.findByProductNameContainingIgnoreCaseAndProvider(keyword, p, minPrice, maxPrice, minRating, maxRating, user);
+        }
+        else{
+            Pageable p = PageRequest.of(pN, pS);
+            pageProducts = this.productRepo.findByProductNameIgnoreCaseAndProvider(keyword, p, minPrice, maxPrice, minRating,  maxRating, user.getId());
+        }
+        List<Product> allProducts = pageProducts.getContent();
+        List<DisplayProductDto> productDTO = new ArrayList<>();
+        for (Product product : allProducts) {
+            DisplayProductDto productDto = this.modelMapper.map(product, DisplayProductDto.class);
+            productDto.setImageUrls(product.getImageUrls().get(0));
+            productDTO.add(productDto);
+        }
+        return new PageResponse(productDTO.stream().sequential().collect(Collectors.toList()), pageProducts.getNumber(), pageProducts.getSize(), pageProducts.getTotalPages(), pageProducts.getTotalElements(), pageProducts.isLast());
+    }
+//---------------------------------------------------FAQs------------------------------------------------------------------------------------
+    @Override
+    public PageResponse getAllFAQ(Long productId, PageableDto pageable){
+        Product product = this.productRepo.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+        Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
+        Pageable p = PageRequest.of(pN, pS);
+        Set<QuestionModel> questions = product.getQuestions();
+        Page<QuestionModel> pageFAQ = new PageImpl<>(questions.stream().toList(), p, pageable.getPageSize());
+        List<QuestionModel> allFAQs = pageFAQ.getContent();
+        return new PageResponse(new ArrayList<>(allFAQs),pageFAQ.getNumber(), pageFAQ.getSize(), pageFAQ.getTotalPages(), pageFAQ.getTotalElements(), pageFAQ.isLast());
+    }
+    @Override
+    public ResponseEntity<?> addFAQ(User user, Long ProductId, QuestionModel questionModel){
+        Product product = this.productRepo.findById(ProductId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID", ProductId));
+        if(!user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_ADMIN).orElse(null)) && !user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_MERCHANT).orElse(null))) questionModel.setAnswer(null);
+        product.getQuestions().add(questionModel);
+        this.productRepo.save(product);
+        return new ResponseEntity<>(new ApiResponse("Question has been successfully added", true), OK);
+    }
+    @Override
+    public ResponseEntity<?> answerAFAQ(User user, Long ProductId, QuestionModel questionModel, Integer QuestionID){
+        QuestionModel questionModel1 = this.questionsRepo.findById(QuestionID).orElseThrow(()-> new ResourceNotFoundException("Question", "QuestionID", QuestionID));
+        Product product = this.productRepo.findById(ProductId).orElseThrow(() -> new ResourceNotFoundException("Product", "ProductID", ProductId));
+        if(!Objects.equals(product.getProvider().getId(), user.getId())){
+            return new ResponseEntity<>(new ApiResponse("User is not authorize to perform the required action", false), HttpStatus.FORBIDDEN);
+        }
+        questionModel1.setAnswer(questionModel1.getAnswer());
+        return new ResponseEntity<>(questionModel1, OK);
     }
 }

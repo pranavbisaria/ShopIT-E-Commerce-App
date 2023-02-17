@@ -1,6 +1,7 @@
 package com.ShopIT.Models;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,13 +18,15 @@ public class MerchantOrderReceived {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
-    @ManyToOne()
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Address address;
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Product product;
     private Long Quantity;
     private String paymentId;
     private Integer amountReceived;
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    @JsonFormat(pattern = "dd-MMM-yyyy")
     private Date dateOfOrder;
+    @ManyToOne(fetch = FetchType.EAGER)
+    private User Customer;
 }

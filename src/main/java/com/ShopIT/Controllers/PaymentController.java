@@ -85,7 +85,7 @@ public class PaymentController {
         if(profile.getAddress()==null || profile.getAddress().isEmpty()){
             return new ResponseEntity<>(new ApiResponse("Please Update Your Address first", false), HttpStatus.NOT_ACCEPTABLE);
         }
-        return this.paymentService.updateDirectOrder(product, n, profile, response);
+        return this.paymentService.updateDirectOrder(user, product, n, profile, response);
     }
     @PreAuthorize("hasAnyRole('NORMAL', 'ADMIN')")
     @GetMapping("/getAllOrders")
@@ -96,5 +96,16 @@ public class PaymentController {
                                             @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir
     ) {
         return new ResponseEntity<>(this.paymentService.getMyOrders(user, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
+    }
+
+    @PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+    @GetMapping("/getMerchantOrders")
+    public ResponseEntity<?> getMerchantOrder(@CurrentUser User user,
+                                            @RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
+                                            @RequestParam(value ="pageSize", defaultValue = "5", required = false) Integer pageSize,
+                                            @RequestParam(value ="sortBy", defaultValue = "Id", required = false) String sortBy,
+                                            @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir
+    ) {
+        return new ResponseEntity<>(this.paymentService.getAllMerchantOrder(user, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
     }
 }

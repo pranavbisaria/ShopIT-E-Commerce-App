@@ -1,5 +1,4 @@
 package com.ShopIT.Service.Impl;
-
 import com.ShopIT.Config.AppConstants;
 import com.ShopIT.Config.UserCache;
 import com.ShopIT.Exceptions.ResourceNotFoundException;
@@ -11,14 +10,8 @@ import com.ShopIT.Security.JwtTokenHelper;
 import com.ShopIT.Service.AuthService;
 import com.ShopIT.Service.JWTTokenGenerator;
 import com.ShopIT.Service.OTPService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.twilio.rest.microvisor.v1.App;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.http.HttpStatus;
@@ -28,8 +21,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 @Service @RequiredArgsConstructor
@@ -47,13 +38,15 @@ public class AuthServiceImpl implements AuthService {
     private final WishListRepo wishListRepo;
     private final CartRepo cartRepo;
     private final RecentProductRepo recentProductRepo;
-    private final ReviewRepo reviewRepo;
-    private final MyOrdersRepo myOrdersRepo;
-
     @Override
-    public ResponseEntity<?> LoginAPI(JwtAuthRequest request) {
+    public ResponseEntity<?> LoginAPI(JwtAuthRequest request, Integer RoleID) {
         request.setEmail(request.getEmail().trim().toLowerCase());
         User user = this.userRepo.findByEmail(request.getEmail()).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + request.getEmail(), 0));
+        Role role = null;
+        if(RoleID==1002) role =this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
+        else if(RoleID==1003) role = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).orElse(null);
+        else role = this.roleRepo.findById(AppConstants.ROLE_ADMIN).orElse(null);
+        if(!user.getRoles().contains(role) && !user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_ADMIN).orElse(null))) return new ResponseEntity<>(new ApiResponse("User not found with user email :"+request.getEmail(), false), HttpStatus.NOT_FOUND);
         if(user.getPassword()==null){
             return new ResponseEntity<>(new ApiResponse("Please reset your password first!!!", false), HttpStatus.UNAUTHORIZED);
         }
@@ -81,20 +74,20 @@ public class AuthServiceImpl implements AuthService {
         String email = emailDto.getEmail().trim().toLowerCase();
         Role newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
         if (type.equals("merchant")) {
-            newRole = this.roleRepo.findById(1003).orElse(null);
+            newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).orElse(null);
             if (this.emailExists(email)) {
                 User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-                if (user.getRoles().contains(newRole) || user.getRoles().contains(this.roleRepo.findById(1001).orElse(null))) {
+                if (user.getRoles().contains(newRole) || user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_ADMIN).orElse(null))) {
                     return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
                 }
                 newRole = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
             }
         } else if (this.emailExists(email)) {
             User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
-            if (user.getRoles().contains(newRole) || user.getRoles().contains(this.roleRepo.findById(1001).orElse(null))) {
+            if (user.getRoles().contains(newRole) || user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_ADMIN).orElse(null))) {
                 return new ResponseEntity<>(new ApiResponse("User already exist with the entered email id", false), HttpStatus.CONFLICT);
             }
-            newRole = (Role)this.roleRepo.findById(1003).orElse(null);
+            newRole = this.roleRepo.findById(AppConstants.ROLE_MERCHANT).orElse(null);
         }
         try {
             if (this.userCache.isCachePresent(email)) {
@@ -143,25 +136,26 @@ public class AuthServiceImpl implements AuthService {
             OtpDto storedOtpDto = (OtpDto)this.userCache.getCache(email);
             if (storedOtpDto.getOne_time_password() == userDto.getOne_time_password()) {
                 this.userCache.clearCache(email);
-                User user = new User();
-                user.setEmail(email);
-                user.setFirstname(userDto.getFirstname());
-                user.setLastname(userDto.getLastname());
-                if ((userDto.getGender().equals("f"))) {
-                    user.setProfilePhoto(AppConstants.femalePhoto);
-                    user.setGender("female");
-                } else {
-                    user.setProfilePhoto(AppConstants.malePhoto);
-                    user.setGender("male")  ;
-                }
+                User user = null;
                 if (type.equals("merchant")) {
+                    user = this.userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User", "Email: "+email, 0));
                     MerchantProfile merchantProfile = new MerchantProfile();
                     merchantProfile.setUser(user);
                     this.merchantProfileRepo.saveAndFlush(merchantProfile);
-
                     user.setMerchantProfile(merchantProfile);
                 }
                 else{
+                    user = new User();
+                    user.setEmail(email);
+                    user.setFirstname(userDto.getFirstname());
+                    user.setLastname(userDto.getLastname());
+                    if ((userDto.getGender().equals("f"))) {
+                        user.setProfilePhoto(AppConstants.femalePhoto);
+                        user.setGender("female");
+                    } else {
+                        user.setProfilePhoto(AppConstants.malePhoto);
+                        user.setGender("male")  ;
+                    }
                     Profile profile = new Profile();
                     profile.setUser(user);
                     this.profileRepo.save(profile);
@@ -191,10 +185,14 @@ public class AuthServiceImpl implements AuthService {
         }
     }
     @Override
-    public ResponseEntity<?> signGoogle(String Token) throws NullPointerException {
+    public ResponseEntity<?> signGoogle(String Token, Integer roleID) throws NullPointerException {
         Token = new String(Base64.decodeBase64(Token.split("\\.")[1]), StandardCharsets.UTF_8);
         ObjectMapper mapper = (new ObjectMapper()).configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         GoogleSignModel payload = null;
+        Role role = null;
+        if(roleID==1002) role =this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
+        else if(roleID==1003) role =this.roleRepo.findById(AppConstants.ROLE_MERCHANT).orElse(null);
+        else role =  this.roleRepo.findById(AppConstants.ROLE_ADMIN).orElse(null);
         try {
             payload = mapper.readValue(Token, GoogleSignModel.class);
             if (payload != null) {
@@ -204,6 +202,14 @@ public class AuthServiceImpl implements AuthService {
                     User user;
                     if (this.emailExists(email)) {
                         user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
+                        if(!user.getRoles().contains(role) && !user.getRoles().contains(this.roleRepo.findById(AppConstants.ROLE_ADMIN).orElse(null))) {
+                            user.getRoles().add(this.roleRepo.findById(AppConstants.ROLE_MERCHANT).orElse(null));
+                            MerchantProfile merchantProfile = new MerchantProfile();
+                            merchantProfile.setUser(user);
+                            this.merchantProfileRepo.saveAndFlush(merchantProfile);
+                            user.setMerchantProfile(merchantProfile);
+                            this.userRepo.save(user);
+                        }
                         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
                         String myAccessToken = this.jwtTokenHelper.generateAccessToken(userDetails);
                         String myRefreshToken = this.jwtTokenHelper.generateRefreshToken(userDetails);
@@ -215,8 +221,7 @@ public class AuthServiceImpl implements AuthService {
                         user.setLastname(payload.family_name());
                         user.setPassword("Google");
                         user.setProfilePhoto(payload.picture());
-                        Role role = this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null);
-                        user.getRoles().add(role);
+                        user.getRoles().add(this.roleRepo.findById(AppConstants.ROLE_NORMAL).orElse(null));
                         this.userRepo.save(user);
 
                         Profile profile = new Profile();
@@ -275,9 +280,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<?> resetPassword(ForgetPassword forgetPassword) {
         String email = forgetPassword.getEmail().trim().toLowerCase();
-        User userRP = (User)this.userRepo.findByEmail(email).orElseThrow(() -> {
-            return new ResourceNotFoundException("User", "Email :" + email, 0L);
-        });
+        User userRP = this.userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User", "Email :" + email, 0L));
         if (!userRP.isEnabled()) {
             if (!this.userCache.isCachePresent(email)) {
                 return new ResponseEntity<>(new ApiResponse("Session Time-Out, please try again", false), HttpStatus.REQUEST_TIMEOUT);
@@ -299,9 +302,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<?> sendOTPForget(EmailDto emailDto) throws Exception {
         String email = emailDto.getEmail().trim().toLowerCase();
-        User user = (User)this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
+        User user = this.userRepo.findByEmail(email).orElseThrow(() ->new ResourceNotFoundException("User", "Email: " + email, 0));
         try {
-            OtpDto otp = new OtpDto(email, this.otpService.OTPRequest(email), (Role)null, true);
+            OtpDto otp = new OtpDto(email, this.otpService.OTPRequest(email),null, true);
             user.setEnable(false);
             user.setPassword(null);
             if (this.userCache.isCachePresent(email)) {

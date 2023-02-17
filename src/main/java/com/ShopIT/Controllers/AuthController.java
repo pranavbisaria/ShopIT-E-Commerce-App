@@ -20,8 +20,8 @@ import java.util.concurrent.ExecutionException;
 public class AuthController {
     private final AuthService userService;
     private final JWTTokenGenerator jwtTokenGenerator;
-// User as well as the host login API and          -------------------------/TOKEN GENERATOR/-----------------------
-    @Operation(summary = "This is the API to login into the Application, it also acts as a token generator")
+// User as well as the host login API and          -------------------------/TOKEN GENERATOR User Side/-----------------------
+    @Operation(summary = "This is the API to login into the Application as user side, it also acts as a token generator")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Login Successful, Access Token and Refresh Token is generated", content = @Content(mediaType = "application/json")),
             @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
@@ -29,7 +29,18 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "(Validation)Invalid Email or Password Format", content = @Content(mediaType = "application/json"))})
     @PostMapping("/login")
     public ResponseEntity<?> createToken(@Valid @RequestBody JwtAuthRequest request) {
-        return this.userService.LoginAPI(request);
+        return this.userService.LoginAPI(request, 1002);
+    }
+// User as well as the host login API and          -------------------------/TOKEN GENERATOR Merchant Side/-----------------------
+    @Operation(summary = "This is the API to login into the Application as Merchant side, it also acts as a token generator")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login Successful, Access Token and Refresh Token is generated", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "User Not found", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "401", description = "Wrong Password", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "(Validation)Invalid Email or Password Format", content = @Content(mediaType = "application/json"))})
+    @PostMapping("/loginMerchant")
+    public ResponseEntity<?> createTokenMerchant(@Valid @RequestBody JwtAuthRequest request) {
+        return this.userService.LoginAPI(request, 1003);
     }
 //Regenerate refresh token
     @Operation(summary = "This is the API to regenerate access token")
@@ -78,7 +89,7 @@ public class AuthController {
     public ResponseEntity<?> registerUserDetails(@Valid @RequestBody UserDto userDto, @PathVariable String type) throws ExecutionException {
         return this.userService.signupUser(userDto, type);
     }
-//Sign-in/Signup using google
+//Sign-in/Signup using google in the user side
     @Operation(summary = "Google Authentication for sign-up and sign-in")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Registered", content = @Content(mediaType = "application/json")),
@@ -87,7 +98,18 @@ public class AuthController {
     })
     @PostMapping("/signGoogle")
     public ResponseEntity<?> signWithGoogle(@Valid @RequestParam String TokenG) throws JsonProcessingException, NullPointerException  {
-        return this.userService.signGoogle(TokenG);
+        return this.userService.signGoogle(TokenG, 1002);
+    }
+//Sign-in/Signup using google in the merchant side
+    @Operation(summary = "Google Authentication for sign-up and sign-in")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Registered", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "Invalid token", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "403", description = "Either the token is expired or the token is not authorized", content = @Content(mediaType = "application/json"))
+    })
+    @PostMapping("/signGoogleMerchant")
+    public ResponseEntity<?> signWithGoogleMerchant(@Valid @RequestParam String TokenG) throws JsonProcessingException, NullPointerException  {
+        return this.userService.signGoogle(TokenG, 1003);
     }
 //Forget Password and otp generator API
     @Operation(summary = "To send the OTP to the requested email id if the user forget their credentials")

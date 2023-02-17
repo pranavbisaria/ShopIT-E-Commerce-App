@@ -4,10 +4,10 @@ import com.ShopIT.Payloads.ApiResponse;
 import com.ShopIT.Payloads.PageableDto;
 import com.ShopIT.Payloads.Products.ProductDto;
 import com.ShopIT.Payloads.ReviewDto;
-import com.ShopIT.Repository.ProductRepo;
 import com.ShopIT.Security.CurrentUser;
 import com.ShopIT.Service.ProductService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,16 +22,15 @@ import static org.springframework.http.HttpStatus.OK;
 @RequestMapping("/products")
 public class ProductController {
     private final ProductService productService;
-    private final ProductRepo productRepo;
 
-//----------------------------------------------------Products-----------------------------------------------------------------------------
-
+//-------------------------------------------------------------Products-------------------------------------------------------------------------------
 //Add Product
     @PreAuthorize("hasAnyRole('ADMIN', 'MERCHANT')")
     @PostMapping("/add/{categoryId}")
     public ResponseEntity<?> addProduct(@CurrentUser User user, @RequestPart("images") MultipartFile[] images,@Valid @RequestPart ProductDto productDto, @PathVariable("categoryId") Integer categoryId) {
         return this.productService.addProduct(user, images, productDto, categoryId);
     }
+    //Get all product User Side
     @GetMapping("/get")
     public ResponseEntity<?> getAllProducts(@RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
                                             @RequestParam(value ="pageSize", defaultValue = "5", required = false) Integer pageSize,
@@ -39,6 +38,17 @@ public class ProductController {
                                             @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir
     ){
         return new ResponseEntity<>(this.productService.getAllProducts(new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
+    }
+    //Get all product Merchant Side
+    @PreAuthorize("hasAnyRole('ADMIN', 'MERCHANT')")
+    @GetMapping("/getAllMerchantProducts")
+    public ResponseEntity<?> getAllMerchantProducts(@CurrentUser User user,
+                                            @RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
+                                            @RequestParam(value ="pageSize", defaultValue = "5", required = false) Integer pageSize,
+                                            @RequestParam(value ="sortBy", defaultValue = "productId", required = false) String sortBy,
+                                            @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir
+    ){
+        return new ResponseEntity<>(this.productService.getAllMerchantProducts(user, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
     }
     @GetMapping("/get/{productId}")
     public ResponseEntity<?> getProductById(@CurrentUser User user, @PathVariable("productId") Long productId) {
@@ -64,6 +74,7 @@ public class ProductController {
     public ResponseEntity<?> deleteMapping(@CurrentUser User user, @PathVariable("productId") Long productId){
         return this.productService.deleteProduct(user, productId);
     }
+    //Category Product In User Side
     @GetMapping("/getProductsByCategory/{categoryId}")
     public ResponseEntity<?> getProductsByCategory(@PathVariable("categoryId") Integer categoryId,
                                                    @RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
@@ -72,6 +83,17 @@ public class ProductController {
                                                    @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir
     ){
         return new ResponseEntity<>(this.productService.getAllProductByCategory(categoryId, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
+    }
+    //Category Product In Merchant Side
+    @GetMapping("/getProductsByCategoryMerchant/{categoryId}")
+    public ResponseEntity<?> getProductsByCategoryInMerchantSide(@CurrentUser User user,
+                                                   @PathVariable("categoryId") Integer categoryId,
+                                                   @RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
+                                                   @RequestParam(value ="pageSize", defaultValue = "5", required = false) Integer pageSize,
+                                                   @RequestParam(value ="sortBy", defaultValue = "productId", required = false) String sortBy,
+                                                   @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir
+    ){
+        return new ResponseEntity<>(this.productService.getAllProductByCategoryMerchant(user, categoryId, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
     }
 
 // ---------------------------------------------------------------CART----------------------------------------------------------------------------
@@ -140,7 +162,7 @@ public class ProductController {
         return this.productService.decreaseProductQuantity(user, productId);
     }
 
-//---------------------------------------------------------------WishList--------------------------------------------------------
+//-------------------------------------------------------------------------WishList--------------------------------------------------------------
     @PreAuthorize("hasAnyRole('ADMIN', 'NORMAL')")
     @PatchMapping("/wishlist/add/{productId}")
     public ResponseEntity<?> addToWishList(@CurrentUser User user, @PathVariable("productId") Long productId){
@@ -170,6 +192,7 @@ public class ProductController {
         }
     }
 //---------------------------------------------Search & Filter-----------------------------------------------------------------------
+    //user side
     @GetMapping("/search/{keyword}")
     public ResponseEntity<?> searchProduct(@PathVariable("keyword") String keyword,
                                            @RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
@@ -183,12 +206,28 @@ public class ProductController {
     ) throws Exception{
         return new ResponseEntity<>(this.productService.searchAll(keyword, new PageableDto(pageNumber, pageSize, sortBy, sortDir), minRating, maxRating, minPrice, maxPrice), OK);
     }
+    //Search In Merchant Profile
+    @PreAuthorize("hasAnyRole('ADMIN', 'MERCHANT')")
+    @GetMapping("/searchMerchant/{keyword}")
+    public ResponseEntity<?> searchProductMerchant(@CurrentUser User user,
+                                           @PathVariable("keyword") String keyword,
+                                           @RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
+                                           @RequestParam(value ="pageSize", defaultValue = "5", required = false) Integer pageSize,
+                                           @RequestParam(value ="sortBy", defaultValue = "productName", required = false) String sortBy,
+                                           @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir,
+                                           @RequestParam(value ="minRating", defaultValue = "0", required = false) double minRating,
+                                           @RequestParam(value ="maxRating", defaultValue = "5", required = false) double maxRating,
+                                           @RequestParam(value ="minPrice", defaultValue = "0", required = false) double minPrice,
+                                           @RequestParam(value ="maxPrice", defaultValue = "9999999", required = false) double maxPrice
+    ) throws Exception{
+        return new ResponseEntity<>(this.productService.searchAllMerchant(user, keyword, new PageableDto(pageNumber, pageSize, sortBy, sortDir), minRating, maxRating, minPrice, maxPrice), OK);
+    }
 
 //----------------------------------------------Rating and reviews -------------------------------------------------------------------
     @PreAuthorize("hasAnyRole('NORMAL', 'ADMIN')")
     @PostMapping("/review/add/{productId}")
-    public ResponseEntity<?> addAReview(@CurrentUser User user, @RequestPart(value = "images", required = false) MultipartFile[] images, @PathVariable(value = "productId", required = false) Long productId,@Valid @RequestPart(value = "reviewDto") ReviewDto reviewDto) {
-        return this.productService.addReview(user, productId, reviewDto, images);
+        public ResponseEntity<?> addAReview(@CurrentUser User user, @RequestParam("images") MultipartFile[] images, @PathVariable(value = "productId", required = false) Long productId, @Valid @NotNull @RequestParam("rating") String rating, @Valid @RequestParam(required = false) String description) {
+        return this.productService.addReview(user, productId, new ReviewDto(null, null, rating, description, null, null), images);
     }
     @GetMapping("/getReview/{productId}")
     public ResponseEntity<?> getAllReviews(@PathVariable(value = "productId", required = false) Long productId,
@@ -211,5 +250,23 @@ public class ProductController {
                                            @RequestParam(value ="sortDir", defaultValue = "des", required = false) String sortDir
     ) {
         return new ResponseEntity<>(this.productService.getMyReviews(user, new PageableDto(pageNumber, pageSize, sortBy, sortDir)), OK);
+    }
+
+//------------------------------------------FAQs---------------------------------------------------------------------------------------
+    @GetMapping("/getFAQs/{ProductId}")
+    public ResponseEntity<?> getAllFAQa(@PathVariable Long ProductId,
+                                        @RequestParam(value ="pageNumber", defaultValue = "0", required = false) Integer pageNumber,
+                                        @RequestParam(value ="pageSize", defaultValue = "5", required = false) Integer pageSize
+    ) {
+        return new ResponseEntity<>(this.productService.getAllFAQ(ProductId, new PageableDto(pageNumber, pageSize, null, null)), OK);
+    }
+    @PostMapping("/addFAQ/{ProductId}")
+    public ResponseEntity<?> addMyQuestion(@CurrentUser User user, @PathVariable Long ProductId, @RequestBody QuestionModel questionModel){
+        return this.productService.addFAQ(user, ProductId, questionModel);
+    }
+    @PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+    @PatchMapping("/answerFAQ/product/{ProductId}/question/{QuestionID}")
+    public ResponseEntity<?> answerAFAQ(@CurrentUser User user, @PathVariable Long ProductId, @PathVariable Integer QuestionID, @RequestBody QuestionModel questionModel){
+        return this.productService.answerAFAQ(user, ProductId, questionModel, QuestionID);
     }
 }

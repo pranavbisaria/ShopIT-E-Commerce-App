@@ -13,8 +13,10 @@ public interface PaymentService {
     ResponseEntity<?> createOrder(Profile profile, long amt, Address address) throws RazorpayException;
     ResponseEntity<?> updateOrder(User user, Profile profile, PaymentReturnResponse response) throws SignatureException;
 
-    ResponseEntity<?> updateDirectOrder(Product product, Long n, Profile profile, PaymentReturnResponse response) throws SignatureException;
+    ResponseEntity<?> updateDirectOrder(User user, Product product, Long n, Profile profile, PaymentReturnResponse response) throws SignatureException;
 
     //Get All my Orders
     PageResponse getMyOrders(User user, PageableDto pageable);
+
+    PageResponse getAllMerchantOrder(User user, PageableDto pageable);
 }

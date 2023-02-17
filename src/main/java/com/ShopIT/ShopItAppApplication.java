@@ -12,10 +12,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableAsync;
+
 import java.util.List;
 
 @SpringBootApplication
 @RequiredArgsConstructor
+@EnableAsync
 @OpenAPIDefinition(info = @Info(title = "ShopIT: E-Commerce Application",version = "3.0",description = "Complete APIs for ShopIT - An E-Commerce application"))
 @EnableCaching
 public class ShopItAppApplication implements CommandLineRunner {

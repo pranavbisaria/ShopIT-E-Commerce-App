@@ -24,6 +24,8 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SignatureException;
 import java.util.*;
+import java.util.stream.Collectors;
+
 import static org.springframework.http.HttpStatus.OK;
 @Service
 @Transactional
@@ -36,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final ProductService productService;
     private final ProductInCartRepo productInCartRepo;
     private final ProductRepo productRepo;
+    private final MerchantReceivedOrderRepo merchantReceivedOrderRepo;
     private final MerchantProfileRepo merchantProfileRepo;
     private final NotificationService notificationService;
     @Override
@@ -76,7 +79,8 @@ public class PaymentServiceImpl implements PaymentService {
         myOrders.setPaymentId(response.getRazorpay_payment_id());
         myOrders.setStatus("paid");
         List<ProductInCart> productInCarts = this.productInCartRepo.findByUser(profile.getUser());
-        String image = String.valueOf(((productInCarts.get(0)).getProduct().getImageUrls()).get(0));
+        String image = ((productInCarts.get(0)).getProduct().getImageUrls()).get(0).getImageUrl();
+        myOrders.setImage(image);
         productInCarts.forEach((product)->{
             Product product1 = product.getProduct();
             User userProvider = product1.getProvider();
@@ -85,6 +89,7 @@ public class PaymentServiceImpl implements PaymentService {
             merchantOrder.setAddress(myOrders.getAddress());
             merchantOrder.setPaymentId(myOrders.getPaymentId());
             merchantOrder.setProduct(product1);
+            merchantOrder.setCustomer(user);
             merchantOrder.setQuantity(product.getNoOfProducts());
             merchantOrder.setDateOfOrder(product.getDateOfOrder());
             notificationService.sendPrivateNotification(new Message("New order received: "+myOrders.getOrderId(), "You have received a order with order Id "+myOrders.getOrderId() + ", for product \""+product1.getProductName()+"\" for "+product.getNoOfProducts()+" number of units.", image, String.valueOf(userProvider.getId())));
@@ -93,21 +98,21 @@ public class PaymentServiceImpl implements PaymentService {
             product1.setQuantityAvailable(product1.getQuantityAvailable()-product.getNoOfProducts());
             this.productRepo.save(product1);
             this.productService.emptyMyCart(profile.getUser());
-            this.merchantProfileRepo.save(merchantProfile);
         });
         notificationService.sendPrivateNotification(new Message("Order Placed Successfully: "+myOrders.getOrderId(), "Your order has been successfully placed with order Id "+myOrders.getOrderId(), image, String.valueOf(profile.getUser().getId())));
         this.myOrdersRepo.saveAndFlush(myOrders);
         return new ResponseEntity<>(this.modelMapper.map(myOrders, OrderDto.class), OK);
     }
     @Override
-    public ResponseEntity<?> updateDirectOrder(Product product, Long n, Profile profile, PaymentReturnResponse response) throws SignatureException {
+    public ResponseEntity<?> updateDirectOrder(User user, Product product, Long n, Profile profile, PaymentReturnResponse response) throws SignatureException {
         MyOrders myOrders = this.myOrdersRepo.findByOrderId(response.getRazorpay_order_id()).orElseThrow(()-> new ResourceNotFoundException("Order", "OrderId: "+response.getRazorpay_order_id(),0));
         if(!response.getRazorpay_signature().equals(calculateRFC2104HMAC(response.getRazorpay_order_id()+"|"+response.getRazorpay_payment_id(), paymentConfigs.getKeySecret())) && !(Objects.equals(profile.getId(), myOrders.getProfiles().getId()))){
             return new ResponseEntity<>(new ApiResponse("Invalid Payment Entry!!!", false), HttpStatus.PAYMENT_REQUIRED);
         }
         myOrders.setPaymentId(response.getRazorpay_payment_id());
         myOrders.setStatus("paid");
-        String image = String.valueOf(product.getImageUrls().get(0));
+        String image = product.getImageUrls().get(0).getImageUrl();
+        myOrders.setImage(image);
         User userProvider = product.getProvider();
         MerchantProfile merchantProfile = this.merchantProfileRepo.findByUser(userProvider);
         MerchantOrderReceived merchantOrder = new MerchantOrderReceived();
@@ -117,12 +122,12 @@ public class PaymentServiceImpl implements PaymentService {
         merchantOrder.setProduct(product);
         merchantOrder.setQuantity(n);
         merchantOrder.setDateOfOrder(myOrders.getDateOfPurchase());
+        merchantOrder.setCustomer(user);
         notificationService.sendPrivateNotification(new Message("New order received: "+myOrders.getOrderId(), "You have received a order with order Id "+myOrders.getOrderId() + ", for product \""+product.getProductName()+"\" for "+n+" number of units.", image, String.valueOf(userProvider.getId())));
         merchantOrder.setAmountReceived(myOrders.getAmount());
         merchantProfile.getPaymentsReceived().add(merchantOrder);
-        this.merchantProfileRepo.save(merchantProfile);
         this.productRepo.save(product);
-        this.myOrdersRepo.saveAndFlush(myOrders);
+        this.myOrdersRepo.save(myOrders);
         notificationService.sendPrivateNotification(new Message("Order Placed Successfully: "+myOrders.getOrderId(), "Your order has been successfully placed with order Id "+myOrders.getOrderId(), image, String.valueOf(profile.getUser().getId())));
         return new ResponseEntity<>(this.modelMapper.map(myOrders, OrderDto.class), OK);
     }
@@ -157,8 +162,27 @@ public class PaymentServiceImpl implements PaymentService {
         List<OrderDto> reviewDTOs = new ArrayList<>();
         productReview.forEach((userOrder)-> {
             OrderDto ordersDto = this.modelMapper.map(userOrder, OrderDto.class);
+            ordersDto.setImage(userOrder.getImage());
             reviewDTOs.add(ordersDto);
         });
         return new PageResponse(new ArrayList<>(reviewDTOs), pageReview.getNumber(), pageReview.getSize(), pageReview.getTotalPages(), pageReview.getTotalElements(), pageReview.isLast());
     }
+    @Override
+    public PageResponse getAllMerchantOrder(User user, PageableDto pageable){
+        MerchantProfile merchantProfile = this.merchantProfileRepo.findByUser(user);
+        Integer pN = pageable.getPageNumber(), pS = pageable.getPageSize();
+        Sort sort = null;
+        if(pageable.getSortDir().equalsIgnoreCase("asc")){
+            sort = Sort.by(pageable.getSortBy()).ascending();
+        }
+        else{
+            sort = Sort.by(pageable.getSortBy()).descending();
+        }
+        Pageable p = PageRequest.of(pN, pS, sort);
+        Page<MerchantOrderReceived> pageOrders = new PageImpl<>(merchantProfile.getPaymentsReceived(), p, pageable.getPageSize());
+        List<MerchantOrderReceived> AllOrders = pageOrders.getContent();
+        Set<MerchantOrderReceived> AllOrdersSet = new HashSet<>(AllOrders);
+        return new PageResponse(AllOrdersSet.stream().map((orders) -> this.modelMapper.map(orders, MerchantOrderDto.class)).collect(Collectors.toList()), pageOrders.getNumber(), pageOrders.getSize(), pageOrders.getTotalPages(), pageOrders.getTotalElements(), pageOrders.isLast());
+    }
 }
+

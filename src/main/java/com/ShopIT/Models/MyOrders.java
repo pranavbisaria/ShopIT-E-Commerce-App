@@ -17,9 +17,9 @@ public class MyOrders {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private Date dateOfPurchase;
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private Date created_at;
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Address address;
@@ -31,6 +31,7 @@ public class MyOrders {
     private String currency;
     private String paymentId;
     private String status;
+    private String image;
     @JsonIgnore
     @ManyToOne(cascade = CascadeType.ALL)
     private Profile profiles;
